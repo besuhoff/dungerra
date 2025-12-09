@@ -26,7 +26,7 @@ export class SocketService {
   private reconnectDelay: number = 1000;
   private sessionId: string | null = null;
   private messageQueue: GameMessage[] = [];
-  private binaryMode: boolean = true;
+  private binaryMode: boolean = process.env.NODE_ENV === "production";
 
   private constructor() {}
 
@@ -76,7 +76,11 @@ export class SocketService {
       return;
     }
 
-    this.socket.send(GameMessage.toJsonString(message));
+    this.socket.send(
+      this.binaryMode
+        ? GameMessage.toBinary(message)
+        : GameMessage.toJsonString(message)
+    );
   }
 
   private setupEventListeners(): void {

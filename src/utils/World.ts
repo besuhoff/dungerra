@@ -302,13 +302,6 @@ export class World implements IWorld {
       // Update camera position
       this._cameraPoint = this._player.getPosition().clone();
     }
-
-    // Check win/lose conditions
-    if (this._player && !this._player.isAlive()) {
-      setTimeout(() => {
-        this.endGame();
-      }, 1000);
-    }
   }
 
   endGame(): void {
@@ -643,6 +636,10 @@ export class World implements IWorld {
 
   applyGameStateDelta(changeset: GameStateDeltaMessage): void {
     if (changeset.timestamp <= this._lastChangesetTimestamp) {
+      console.log(
+        `Ignoring out-of-order changeset. Last: ${this._lastChangesetTimestamp}, Received: ${changeset.timestamp}`,
+        changeset
+      );
       return;
     }
 

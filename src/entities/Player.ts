@@ -272,6 +272,13 @@ export class Player extends ScreenObject implements IPlayer {
       this.heal(changeset.lives - this._lives);
     }
 
+    // Check win/lose conditions
+    if (!this.isAlive()) {
+      setTimeout(() => {
+        this.world.endGame();
+      }, 1000);
+    }
+
     this._money = changeset.money;
     this._kills = changeset.kills;
     if (this._bulletsLeft < changeset.bulletsLeft) {

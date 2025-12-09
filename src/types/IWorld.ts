@@ -26,6 +26,7 @@ export interface IWorld {
   initPlayerFromSession(player: SessionPlayer): void;
   toggleDebug(): void;
   restart(): void;
+  endGame(): void;
   togglePause(): void;
   update(dt: number): void;
   draw(
