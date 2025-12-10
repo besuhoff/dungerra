@@ -18,7 +18,6 @@ export interface IPlayer
     IKillable,
     IVisor {
   recordKill(reward: number): void;
-  heal(amount: number): void;
   drawUI(ctx: CanvasRenderingContext2D): void;
   rotation: number;
   money: number;
