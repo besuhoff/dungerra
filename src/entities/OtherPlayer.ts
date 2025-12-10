@@ -20,9 +20,7 @@ export class OtherPlayer extends ScreenObject implements IOtherPlayer {
   private _lives: number = config.PLAYER_LIVES;
   private _nightVisionTimer: number = 0;
 
-  private reward: number = config.PLAYER_REWARD;
   private dead: boolean = false;
-  private deadTimer: number = 0;
 
   get rotation(): number {
     return this._rotation;
@@ -80,36 +78,10 @@ export class OtherPlayer extends ScreenObject implements IOtherPlayer {
     this._rotation = angle;
   }
 
-  takeDamage(amount: number): void {
-    if (this._invulnerableTimer <= 0) {
-      this._lives -= amount;
-      this._invulnerableTimer = config.PLAYER_INVULNERABILITY_TIME;
-      AudioManager.getInstance().playSound(config.SOUNDS.PLAYER_HURT);
-    }
-
-    if (this._lives <= 0) {
-      this.die();
-      if (this.world.player) {
-        this.world.player.recordKill(this.reward);
-      }
-    }
-  }
-
   update(dt: number): void {
     // Update timers
     if (this._invulnerableTimer > 0) {
       this._invulnerableTimer = Math.max(0, this._invulnerableTimer - dt);
-    }
-
-    this._bullets.forEach((bullet) => {
-      bullet.update(dt);
-    });
-
-    if (this.dead) {
-      if (this.deadTimer <= 0) {
-        this.deadTimer -= dt;
-      }
-      return;
     }
   }
 
@@ -215,11 +187,6 @@ export class OtherPlayer extends ScreenObject implements IOtherPlayer {
 
   isAlive(): boolean {
     return this._lives > 0;
-  }
-
-  die(): void {
-    this.deadTimer = config.ENEMY_DEATH_TRACE_TIME;
-    this.dead = true;
   }
 
   get lives(): number {
