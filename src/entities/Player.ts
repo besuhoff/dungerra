@@ -30,7 +30,7 @@ export class Player extends ScreenObject implements IPlayer {
       dy: number;
     };
   } = {};
-  private _lives: number = config.PLAYER_LIVES;
+  private _lives: number = 0;
 
   get money(): number {
     return this._money;
@@ -112,13 +112,10 @@ export class Player extends ScreenObject implements IPlayer {
   }
 
   takeDamage(amount: number): void {
-    // if (this._invulnerableTimer <= 0) {
     this._lives -= amount;
-    // this._invulnerableTimer = config.PLAYER_INVULNERABILITY_TIME;
     AudioManager.getInstance().playSound(
       this._lives > 0 ? config.SOUNDS.PLAYER_HURT : config.SOUNDS.PLAYER_DEAD
     );
-    // }
   }
 
   hasNightVision(): boolean {
@@ -127,10 +124,6 @@ export class Player extends ScreenObject implements IPlayer {
 
   isNightVisionFading(): boolean {
     return this._nightVisionTimer < 2 && this._nightVisionTimer % 0.2 < 0.1;
-  }
-
-  heal(amount: number): void {
-    this._lives = Math.min(this._lives + amount, config.PLAYER_LIVES);
   }
 
   update(dt: number): void {
@@ -269,7 +262,7 @@ export class Player extends ScreenObject implements IPlayer {
     if (this._lives > changeset.lives) {
       this.takeDamage(this._lives - changeset.lives);
     } else if (this._lives < changeset.lives) {
-      this.heal(changeset.lives - this._lives);
+      this._lives = changeset.lives;
     }
 
     // Check win/lose conditions
