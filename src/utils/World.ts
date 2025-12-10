@@ -302,6 +302,10 @@ export class World implements IWorld {
       // Update camera position
       this._cameraPoint = this._player.getPosition().clone();
     }
+
+    for (const otherPlayer of Object.values(this._otherPlayers)) {
+      otherPlayer.update(dt);
+    }
   }
 
   endGame(): void {
