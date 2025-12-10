@@ -125,7 +125,7 @@ export class OtherPlayer extends ScreenObject implements IOtherPlayer {
     const screenPoint = this.world.worldToScreenCoordinates(this.getPosition());
     let shouldDraw = true;
 
-    if (!this.world.player.hasNightVision()) {
+    if (!this.world.player.hasNightVision() && this.hasNightVision()) {
       const distance = this.getPosition().distanceTo(
         this.world.player.getTorchPoint()
       );
