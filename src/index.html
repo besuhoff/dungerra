@@ -165,6 +165,10 @@
         margin-top: 20px;
       }
 
+      #sessions h2 {
+        text-align: center;
+      }
+
       .sessions-list {
         list-style: none;
         padding: 0;
@@ -176,6 +180,7 @@
       .session-item {
         display: flex;
         justify-content: space-between;
+        align-items: center;
         gap: 10px;
         padding: 10px 15px;
         margin: 5px 0;
@@ -195,14 +200,63 @@
         transform: translateY(0);
       }
 
+      .session-info {
+        display: flex;
+        gap: 10px;
+        flex: 1;
+        align-items: center;
+      }
+
       .session-name {
         color: #fff;
         font-weight: 500;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .session-host {
+        color: #ffaa33;
+        font-size: 12px;
+        font-weight: normal;
       }
 
       .session-players {
         color: #ff9900;
         font-weight: bold;
+      }
+
+      .session-delete {
+        padding: 5px 10px;
+        font-size: 14px;
+        background-color: #c00;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        opacity: 0.8;
+        transition:
+          opacity 0.2s,
+          transform 0.1s;
+      }
+
+      .session-delete:disabled {
+        cursor: not-allowed;
+        background-color: #754b0b;
+      }
+
+      .session-delete:disabled:hover {
+        transform: none;
+      }
+
+      .session-delete:not(:disabled):hover {
+        opacity: 1;
+        transform: scale(1.05);
+      }
+
+      .session-delete:not(:disabled):active {
+        transform: scale(0.95);
       }
 
       .sessions-empty {
@@ -322,7 +376,7 @@
         <p class="error"></p>
       </div>
     </div>
-    <div id="gameScreen">
+    <div id="gameScreen" class="screen">
       <canvas id="gameCanvas" class="gameCanvas"></canvas>
       <canvas id="lightCanvas" class="gameCanvas"></canvas>
       <canvas id="uiCanvas" class="gameCanvas"></canvas>

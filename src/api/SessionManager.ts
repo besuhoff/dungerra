@@ -5,7 +5,6 @@ import {
   SessionChunk,
 } from "../types/session";
 import { HttpClient } from "./HttpClient";
-import * as config from "../config";
 import { SocketService } from "./SocketService";
 import {
   GameStateMessage,
@@ -55,6 +54,21 @@ export class SessionManager {
     this.currentSession = session;
     this.socketService.connect(session.id);
     return session;
+  }
+
+  public async deleteSession(sessionId: string): Promise<void> {
+    await HttpClient.delete(`/sessions/${sessionId}`);
+    if (this.currentSession?.id === sessionId) {
+      this.currentSession = null;
+      this.socketService.disconnect();
+    }
+  }
+
+  public async endSession(): Promise<void> {
+    if (this.currentSession) {
+      this.socketService.disconnect();
+      this.currentSession = null;
+    }
   }
 
   public async addSessionChunks(

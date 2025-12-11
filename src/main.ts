@@ -9,8 +9,24 @@ const authManager = AuthManager.getInstance();
 const leaderboardManager = LeaderboardManager.getInstance();
 const sessionManager = SessionManager.getInstance();
 
+let game: Game | null = null;
+
 function getElement<T extends HTMLElement>(elementId: string): T | null {
   return document.getElementById(elementId) as T;
+}
+
+function getSessionIdFromUrl(): string | null {
+  const path = window.location.pathname;
+  const match = path.match(/^\/([a-f0-9-]+)$/i);
+  return match ? match[1] : null;
+}
+
+function navigateToSession(sessionId: string): void {
+  window.history.pushState({}, "", `/${sessionId}`);
+}
+
+function navigateToHome(): void {
+  window.history.pushState({}, "", "/");
 }
 
 function hideElement(elementId: string) {
@@ -112,6 +128,23 @@ window.onload = async () => {
     authManager.initToken();
     await authManager.checkAuthStatus();
     await Game.loadResources();
+
+    // Check if accessing a session directly via URL
+    const sessionId = getSessionIdFromUrl();
+    if (sessionId) {
+      try {
+        game = new Game();
+        const session = await sessionManager.joinSession(sessionId);
+        await game.start(session);
+        showScreen("game");
+        return;
+      } catch (error) {
+        console.error("Failed to join session from URL:", error);
+        // Fall through to show leaderboard
+        navigateToHome();
+      }
+    }
+
     const [leaderboard, sessions] = await Promise.all([
       leaderboardManager.getLeaderboard(),
       sessionManager.listSessions(),
@@ -154,14 +187,21 @@ function updateSessions(sessions: Session[]) {
     return;
   }
 
+  const currentUserId = authManager.getUserData()?.id;
+
   sessionsList.innerHTML = sessions
     .map((session) => {
       const playerCount = Object.keys(session.players).length;
       const maxPlayers = session.max_players || 4;
+      const isHost = session.host.id === currentUserId;
+      const deleteButton = `<button ${isHost ? "" : 'disabled title="You must be the host to delete this session"'} class="session-delete" data-session-id="${session.id}" onclick="event.stopPropagation()">🗑️</button>`;
       return `
                 <li class="session-item" data-session-id="${session.id}">
-                    <span class="session-name">"${session.name}" (${session.host.username})</span>
-                    <span class="session-players">${playerCount}/${maxPlayers}</span>
+                    <div class="session-info">
+                        <span class="session-name">"${session.name}"<span class="session-host">${isHost ? "You" : session.host.username}</span></span>
+                        <span class="session-players">${playerCount}/${maxPlayers}</span>
+                    </div>
+                    ${deleteButton}
                 </li>
             `;
     })
@@ -175,9 +215,10 @@ function updateSessions(sessions: Session[]) {
         const sessionId = item.dataset.sessionId;
         if (!sessionId) return;
 
-        const game = new Game();
+        game = new Game();
         try {
           const session = await sessionManager.joinSession(sessionId);
+          navigateToSession(sessionId);
           await game.start(session);
           showScreen("game");
         } catch (error) {
@@ -189,6 +230,36 @@ function updateSessions(sessions: Session[]) {
             errorElement.textContent =
               "Failed to join session. Please try again.";
             errorElement.style.setProperty("display", "block");
+          }
+        }
+      });
+    });
+
+  // Add click handlers to delete buttons
+  sessionsList
+    .querySelectorAll<HTMLButtonElement>(".session-delete")
+    .forEach((button) => {
+      button.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const sessionId = button.dataset.sessionId;
+        if (!sessionId) return;
+
+        if (confirm("Are you sure you want to delete this session?")) {
+          try {
+            await sessionManager.deleteSession(sessionId);
+            // Refresh the sessions list
+            const sessions = await sessionManager.listSessions();
+            updateSessions(sessions);
+          } catch (error) {
+            console.error("Failed to delete session:", error);
+            const errorElement = document.querySelector<HTMLParagraphElement>(
+              "#leaderboardScreen .error"
+            );
+            if (errorElement) {
+              errorElement.textContent =
+                "Failed to delete session. Please try again.";
+              errorElement.style.setProperty("display", "block");
+            }
           }
         }
       });
@@ -241,9 +312,14 @@ getElement("createSessionButton")?.addEventListener("click", async () => {
     modal.classList.remove("show");
   }
 
-  const game = new Game();
+  if (game) {
+    game.stop();
+  }
+
+  game = new Game();
   try {
     const session = await sessionManager.startSession(sessionName);
+    navigateToSession(session.id);
     await game.start(session);
     showScreen("game");
   } catch (error) {
@@ -279,6 +355,48 @@ document.addEventListener("keydown", (e) => {
     const modal = getElement("sessionNameModal");
     if (modal?.classList.contains("show")) {
       modal.classList.remove("show");
+    }
+  }
+});
+
+// Handle browser back button
+window.addEventListener("popstate", async () => {
+  const sessionId = getSessionIdFromUrl();
+
+  if (!sessionId) {
+    // User navigated back to home, show leaderboard screen
+    const currentScreen = document.querySelector<HTMLDivElement>(
+      ".screen[style*='display: flex']"
+    );
+
+    if (currentScreen?.id === "gameScreen") {
+      // Coming from game, disconnect and show leaderboard
+      try {
+        await sessionManager.endSession();
+        game?.stop();
+      } catch (error) {
+        console.error("Error ending session:", error);
+      }
+
+      // Refresh sessions list
+      const sessions = await sessionManager.listSessions();
+      updateSessions(sessions);
+      showScreen("leaderboard");
+    }
+  } else {
+    // User navigated to a session URL
+    try {
+      if (game) {
+        game.stop();
+      }
+      game = new Game();
+      const session = await sessionManager.joinSession(sessionId);
+      await game.start(session);
+      showScreen("game");
+    } catch (error) {
+      console.error("Failed to join session from URL:", error);
+      navigateToHome();
+      showScreen("leaderboard");
     }
   }
 });
