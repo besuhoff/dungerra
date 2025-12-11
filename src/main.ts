@@ -22,11 +22,11 @@ function getSessionIdFromUrl(): string | null {
 }
 
 function navigateToSession(sessionId: string): void {
-  window.history.pushState({}, "", `/${sessionId}`);
+  window.history.pushState({}, "", `${sessionId}`);
 }
 
 function navigateToHome(): void {
-  window.history.pushState({}, "", "/");
+  window.history.pushState({}, "", "");
 }
 
 function hideElement(elementId: string) {
@@ -416,13 +416,13 @@ window.addEventListener("popstate", async () => {
       ]);
       updateLeaderboard(leaderboard);
       updateSessions(sessions);
-      
+
       // Update username
       const userData = authManager.getUserData();
       if (userData) {
         getElement("username")!.textContent = userData.username;
       }
-      
+
       showScreen("leaderboard");
     }
   } else {
