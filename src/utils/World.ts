@@ -327,12 +327,12 @@ export class World implements IWorld {
         (this.cameraPoint.y % resultingFloorHeight) - resultingFloorHeight;
 
       for (
-        let y = -1;
+        let y = -config.SCREEN_HEIGHT / resultingFloorHeight - 1;
         y < config.SCREEN_HEIGHT / resultingFloorHeight + 2;
         y++
       ) {
         for (
-          let x = -1;
+          let x = -config.SCREEN_WIDTH / resultingFloorWidth - 1;
           x < config.SCREEN_WIDTH / resultingFloorWidth + 2;
           x++
         ) {
