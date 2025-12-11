@@ -129,6 +129,33 @@
         display: none;
       }
 
+      .tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+
+      .tab-button {
+        padding: 8px 20px 12px;
+        font-size: 16px;
+        background-color: rgba(255, 153, 0, 0.2);
+        color: #fff;
+        border: 2px solid transparent;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .tab-button:hover {
+        background-color: rgba(255, 153, 0, 0.3);
+      }
+
+      .tab-button.active {
+        background-color: #ff9900;
+        color: #7e4c00;
+        border-color: #ff9900;
+      }
+
       #leaderboard {
         display: none;
       }
@@ -142,8 +169,14 @@
       }
 
       .leaderboard-item {
-        display: flex;
-        justify-content: space-between;
+        display: grid;
+        grid-template-areas:
+          "rank username score"
+          "rank session score";
+        grid-template-rows: auto auto;
+        grid-template-columns: auto 1fr auto;
+        gap: 4px 10px;
+
         padding: 10px;
         margin: 5px 0;
         background: rgba(255, 153, 0, 0.1);
@@ -154,19 +187,36 @@
         color: #ff9900;
         font-weight: bold;
         margin-right: 10px;
+        grid-area: rank;
       }
 
       .leaderboard-item .score {
         color: #ff9900;
+        grid-area: score;
+      }
+
+      .leaderboard-item .username {
+        color: #fff;
+        font-weight: 500;
+        grid-area: username;
+      }
+
+      .leaderboard-item .session {
+        color: #ffaa33;
+        font-size: 12px;
+        grid-area: session;
       }
 
       #sessions {
         display: block;
-        margin-top: 20px;
+        width: 100%;
+        max-width: 400px;
       }
 
-      #sessions h2 {
-        text-align: center;
+      #leaderboard {
+        display: none;
+        width: 100%;
+        max-width: 400px;
       }
 
       .sessions-list {
@@ -266,6 +316,13 @@
         font-style: italic;
       }
 
+      .leaderboard-empty {
+        color: rgba(255, 255, 255, 0.5);
+        text-align: center;
+        padding: 10px;
+        font-style: italic;
+      }
+
       .button-container {
         display: flex;
         flex-direction: column;
@@ -359,16 +416,18 @@
       <img class="logo" src="favicon.png" alt="" width="100" />
       <h1>Dungeon Game</h1>
       <p>Welcome, <span id="username"></span>!</p>
-      <div id="leaderboard">
-        <h2>Leaderboard</h2>
-        <ul class="leaderboard-list" id="leaderboardList">
-          <!-- Leaderboard entries will be added here dynamically -->
-        </ul>
+      <div class="tabs">
+        <button class="tab-button active" id="sessionsTab">Sessions</button>
+        <button class="tab-button" id="leaderboardTab">Leaderboard</button>
       </div>
       <div id="sessions">
-        <h2>Available Sessions</h2>
         <ul class="sessions-list" id="sessionsList">
           <!-- Session entries will be added here dynamically -->
+        </ul>
+      </div>
+      <div id="leaderboard">
+        <ul class="leaderboard-list" id="leaderboardList">
+          <!-- Leaderboard entries will be added here dynamically -->
         </ul>
       </div>
       <div class="button-container">

@@ -11,11 +11,6 @@ export interface IUserData {
   current_session: string;
 }
 
-export interface ILeaderboardEntry {
-  name: string;
-  score: number;
-}
-
 export interface IAuthResponse {
   url: string;
 }

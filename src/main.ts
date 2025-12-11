@@ -2,8 +2,8 @@ import { Game } from "./utils/Game";
 import { AuthManager } from "./api/AuthManager";
 import { LeaderboardManager } from "./api/LeaderboardManager";
 import { SessionManager } from "./api/SessionManager";
-import { ILeaderboardEntry } from "./types/auth";
 import { Session } from "./types/session";
+import { LeaderboardEntry } from "./types/leaderboard";
 
 const authManager = AuthManager.getInstance();
 const leaderboardManager = LeaderboardManager.getInstance();
@@ -160,16 +160,24 @@ window.onload = async () => {
   }
 };
 
-function updateLeaderboard(leaderboard: ILeaderboardEntry[]) {
+function updateLeaderboard(leaderboard: LeaderboardEntry[]) {
   const leaderboardList = getElement("leaderboardList");
   if (!leaderboardList) return;
+
+  if (leaderboard.length === 0) {
+    leaderboardList.innerHTML =
+      '<li class="leaderboard-empty">No scores yet. Be the first!</li>';
+    return;
+  }
 
   leaderboardList.innerHTML = leaderboard
     .slice(0, 10) // Show top 10
     .map(
       (entry, index) => `
             <li class="leaderboard-item">
-                <span><span class="rank">#${index + 1}</span> ${entry.name}</span>
+                <span class="rank">#${index + 1}</span> 
+                <span class="username">${entry.username}</span> 
+                <span class="session">For the battle at ${entry.sessionName}</span>
                 <span class="score">${entry.score}</span>
             </li>
         `
@@ -280,6 +288,29 @@ getElement("loginButton")?.addEventListener("click", async () => {
   }
 });
 
+// Tab switching
+getElement("sessionsTab")?.addEventListener("click", () => {
+  getElement("sessionsTab")?.classList.add("active");
+  getElement("leaderboardTab")?.classList.remove("active");
+
+  const sessionsEl = getElement("sessions");
+  const leaderboardEl = getElement("leaderboard");
+
+  if (sessionsEl) sessionsEl.style.display = "block";
+  if (leaderboardEl) leaderboardEl.style.display = "none";
+});
+
+getElement("leaderboardTab")?.addEventListener("click", () => {
+  getElement("leaderboardTab")?.classList.add("active");
+  getElement("sessionsTab")?.classList.remove("active");
+
+  const sessionsEl = getElement("sessions");
+  const leaderboardEl = getElement("leaderboard");
+
+  if (sessionsEl) sessionsEl.style.display = "none";
+  if (leaderboardEl) leaderboardEl.style.display = "block";
+});
+
 getElement("startGameButton")?.addEventListener("click", async () => {
   const modal = getElement("sessionNameModal");
   const input = getElement<HTMLInputElement>("sessionNameInput");
@@ -378,9 +409,20 @@ window.addEventListener("popstate", async () => {
         console.error("Error ending session:", error);
       }
 
-      // Refresh sessions list
-      const sessions = await sessionManager.listSessions();
+      // Refresh both sessions list and leaderboard
+      const [leaderboard, sessions] = await Promise.all([
+        leaderboardManager.getLeaderboard(),
+        sessionManager.listSessions(),
+      ]);
+      updateLeaderboard(leaderboard);
       updateSessions(sessions);
+      
+      // Update username
+      const userData = authManager.getUserData();
+      if (userData) {
+        getElement("username")!.textContent = userData.username;
+      }
+      
       showScreen("leaderboard");
     }
   } else {

@@ -185,6 +185,7 @@ export class Game {
 
   public stop(): void {
     this._started = false;
+    AudioManager.getInstance().stopAllSounds();
   }
 
   private draw(): void {

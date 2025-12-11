@@ -6,9 +6,9 @@ const ASSETS_FOLDER = "assets";
 
 export const LOGIN_BUTTON_TEXTURE = `${ASSETS_FOLDER}/login-button.png`;
 export const API_DOMAIN =
-  // process.env.NODE_ENV === "production" ?
-  "https://dungeon-game-go.onrender.com";
-// : "http://localhost:8080";
+  process.env.NODE_ENV === "production"
+    ? "https://dungeon-game-go.onrender.com"
+    : "http://localhost:8080";
 export const API_BASE_URL = `${API_DOMAIN}/api/v1`;
 
 // Display
