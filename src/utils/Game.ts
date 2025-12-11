@@ -9,11 +9,8 @@ import { World } from "./World";
 import { SessionManager } from "../api/SessionManager";
 import { AuthManager } from "../api/AuthManager";
 import { Bullet } from "../entities/Bullet";
-import { Point2D } from "./geometry/Point2D";
 import { Session } from "../types/session";
 import { OtherPlayer } from "../entities/OtherPlayer";
-import { Vector2D } from "./geometry/Vector2D";
-import { v4 as uuidV4 } from "uuid";
 import { BulletManager } from "./BulletManager";
 export class Game {
   private _canvas: HTMLCanvasElement;
@@ -27,6 +24,7 @@ export class Game {
   private _activeKeys: Set<string> = new Set();
   private _authManager: AuthManager;
   private _sessionManager: SessionManager;
+  private _started: boolean = false;
 
   public get world(): World | null {
     return this._world;
@@ -165,15 +163,16 @@ export class Game {
       );
 
       this._world.initPlayerFromSession(session.players[userData!.id]);
-
-      if (session.world_map) {
-        // this._world.unpackChunksFromSession(session.world_map);
-      }
+      this._started = true;
       requestAnimationFrame((timestamp) => this.gameLoop(timestamp));
     }
   }
 
   private gameLoop(timestamp: number): void {
+    if (!this._started) {
+      return;
+    }
+
     const dt = (timestamp - this._lastTime) / 1000;
     this._lastTime = timestamp;
 
@@ -182,6 +181,11 @@ export class Game {
     this.draw();
 
     requestAnimationFrame((timestamp) => this.gameLoop(timestamp));
+  }
+
+  public stop(): void {
+    this._started = false;
+    AudioManager.getInstance().stopAllSounds();
   }
 
   private draw(): void {

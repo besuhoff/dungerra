@@ -70,4 +70,11 @@ export class HttpClient {
             body: JSON.stringify(body)
         });
     }
+
+    static async delete<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
+        return this.request(endpoint, {
+            ...options,
+            method: 'DELETE'
+        });
+    }
 }
