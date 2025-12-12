@@ -79,12 +79,12 @@ export class Game {
 
   private setupEventListeners(): void {
     window.addEventListener("keydown", (e) => {
-      this._activeKeys.add(e.key);
+      this._activeKeys.add(e.code);
       this.handleKeyDown(e);
     });
 
     window.addEventListener("keyup", (e) => {
-      this._activeKeys.delete(e.key);
+      this._activeKeys.delete(e.code);
     });
 
     window.addEventListener("mousemove", (e) => this.handleMouseMove(e));

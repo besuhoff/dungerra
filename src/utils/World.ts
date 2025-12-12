@@ -450,7 +450,7 @@ export class World implements IWorld {
     const backward = keys.has("KeyS") || keys.has("ArrowDown");
     const left = keys.has("KeyA") || keys.has("ArrowLeft");
     const right = keys.has("KeyD") || keys.has("ArrowRight");
-    const shoot = keys.has(" ");
+    const shoot = keys.has("Space");
     const now = Date.now();
 
     if (
