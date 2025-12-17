@@ -4,12 +4,14 @@ import { IWorld } from "../IWorld";
 import { IDrawable } from "./IDrawable";
 import { IUpdatable } from "./IUpdatable";
 import { Vector2D } from "../../utils/geometry/Vector2D";
-
-export interface IBullet extends IScreenObject, IDrawable, IUpdatable {
+import { Bullet as BulletMessage } from "../socketEvents";
+import * as config from "../../config";
+export interface IBullet extends IScreenObject, IDrawable {
   active: boolean;
   velocity: Vector2D;
   isEnemy: boolean;
   ownerId?: string;
+  weaponType: config.WeaponType;
 }
 
 export interface IBulletFactory {
@@ -21,4 +23,6 @@ export interface IBulletFactory {
     ownerId?: string,
     id?: string
   ): IBullet;
+
+  fromGameState(world: IWorld, bulletData: BulletMessage): IBullet;
 }

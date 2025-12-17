@@ -7,6 +7,7 @@ export interface IBulletManager extends IDrawable {
   registerShot(bullet: IBullet): void;
   unregisterShot(bulletId: string): void;
   getBulletById(bulletId: string): IBullet | null;
+  hasSoundPlayedForBullet(bulletId: string): boolean;
 }
 
 export interface IBulletManagerFactory {

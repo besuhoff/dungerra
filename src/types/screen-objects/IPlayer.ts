@@ -1,4 +1,4 @@
-import { Game } from "../../utils/Game";
+import { WeaponType } from "../../config";
 import { IPoint } from "../geometry/IPoint";
 import { IWorld } from "../IWorld";
 import { SessionPlayer } from "../session";
@@ -23,6 +23,7 @@ export interface IPlayer
   money: number;
   kills: number;
   bulletsLeft: number;
+  selectedGunType: WeaponType;
   applyFromGameState(changeset: PlayerMessage): void;
 }
 

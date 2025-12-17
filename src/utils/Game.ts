@@ -71,10 +71,15 @@ export class Game {
     audioManager.loadSound(config.SOUNDS.BONUS_PICKUP);
     audioManager.loadSound(config.SOUNDS.GAME_OVER);
     audioManager.loadSound(config.SOUNDS.BULLET);
+    audioManager.loadSound(config.SOUNDS.SHOTGUN);
+    audioManager.loadSound(config.SOUNDS.RAILGUN);
+    audioManager.loadSound(config.SOUNDS.ROCKET_LAUNCHER);
+    audioManager.loadSound(config.SOUNDS.ROCKET_BLAST);
     audioManager.loadSound(config.SOUNDS.SPAWN);
     loadImage(config.TEXTURES.BLOOD);
     loadImage(config.TEXTURES.AID_KIT);
     loadImage(config.TEXTURES.GOGGLES);
+    loadImage(config.TEXTURES.SHOP);
   }
 
   private setupEventListeners(): void {

@@ -88,11 +88,15 @@ export const TEXTURES = {
   FLOOR: Assets.floorTexture,
   WALL: Assets.wallTexture,
   PLAYER: Assets.playerTexture,
+  PLAYER_SHOTGUN: Assets.playerShotgunTexture,
+  PLAYER_RAILGUN: Assets.playerRailgunTexture,
+  PLAYER_ROCKET_LAUNCHER: Assets.playerRocketLauncherTexture,
   ENEMY: Assets.enemyTexture,
   BLOOD: Assets.bloodTexture,
   AID_KIT: Assets.aidKitTexture,
   GOGGLES: Assets.gogglesTexture,
   HEART: Assets.heartTexture,
+  SHOP: Assets.shopTexturne,
 };
 
 export const SOUNDS = {
@@ -105,13 +109,51 @@ export const SOUNDS = {
   PLAYER_BULLET_RECHARGE: Assets.playerBulletRechargeSound,
   BONUS_PICKUP: Assets.bonusPickupSound,
   SPAWN: Assets.spawnSound,
+  ROCKET_LAUNCHER: Assets.rocketLauncherSound,
+  ROCKET_BLAST: Assets.rocketBlastSound,
+  RAILGUN: Assets.railgunSound,
+  SHOTGUN: Assets.shotgunSound,
 };
 
-export const WEBSOCKET_ACTIONS = {
-  BULLET_CREATED: "bullet:created",
-  BULLET_REMOVED: "bullet:destroyed",
-  ENEMY_DESTROYED: "enemy:destroyed",
-  PLAYER_RESPAWNED: "player:respawned",
-  BONUS_CREATED: "bonus:created",
-  BONUS_DESTROYED: "bonus:destroyed",
+export type WeaponType = "blaster" | "shotgun" | "railgun" | "rocket_launcher";
+
+export const WEAPON_TYPES: readonly WeaponType[] = [
+  "blaster",
+  "shotgun",
+  "railgun",
+  "rocket_launcher",
+] as const;
+
+export const BULLET_SOUND_BY_WEAPON_TYPE: Record<WeaponType, string> = {
+  blaster: SOUNDS.BULLET,
+  shotgun: SOUNDS.SHOTGUN,
+  railgun: SOUNDS.RAILGUN,
+  rocket_launcher: SOUNDS.ROCKET_LAUNCHER,
+} as const;
+
+export const WEAPON_TYPES_FROM_INVENTORY: WeaponType[] = [
+  "railgun",
+  "rocket_launcher",
+] as const;
+
+export const AMMO_INVENTORY_ID_BY_WEAPON_TYPE: Partial<
+  Record<WeaponType, number>
+> = {
+  shotgun: 22,
+  rocket_launcher: 23,
+  railgun: 24,
+} as const;
+
+export const BULLET_SYMBOL: Record<WeaponType, string> = {
+  blaster: "●",
+  shotgun: "⁍",
+  railgun: "⚡",
+  rocket_launcher: "🚀",
+};
+
+export const PLAYER_TEXTURE_BY_WEAPON_TYPE: Record<WeaponType, string> = {
+  blaster: TEXTURES.PLAYER,
+  shotgun: TEXTURES.PLAYER_SHOTGUN,
+  railgun: TEXTURES.PLAYER_RAILGUN,
+  rocket_launcher: TEXTURES.PLAYER_ROCKET_LAUNCHER,
 };

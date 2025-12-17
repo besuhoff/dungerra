@@ -47,10 +47,24 @@ export class Bonus extends ScreenObject implements IBonus {
 
     const player = this.world.player;
     const distance = this.getPosition().distanceTo(player.getPosition());
-    const shouldDraw =
+    let shouldDraw =
       (distance <= this.world.torchRadius + this.width ||
         player.hasNightVision()) &&
       !this.world.gameOver;
+
+    for (const otherPlayer of this.world.otherPlayers) {
+      if (otherPlayer.hasNightVision()) {
+        continue;
+      }
+
+      const distToOther = this.getPosition().distanceTo(
+        otherPlayer.getPosition()
+      );
+      if (distToOther <= this.world.torchRadius + this.width) {
+        shouldDraw = true;
+        break;
+      }
+    }
 
     if (!shouldDraw) {
       return;
