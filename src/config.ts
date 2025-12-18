@@ -106,6 +106,12 @@ export const TEXTURES = {
   ITEM_AMMO_SHOTGUN: Assets.itemAmmoShotgunTexture,
   ITEM_AMMO_ROCKET_LAUNCHER: Assets.itemAmmoRocketLauncherTexture,
   ITEM_AMMO_RAILGUN: Assets.itemAmmoRailgunTexture,
+
+  BULLET_ROCKET: Assets.bulletRocketTexture,
+};
+
+export const ANIMATIONS = {
+  EXPLOSION: Assets.explosionAnimation,
 };
 
 export const SOUNDS = {

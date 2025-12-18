@@ -6,6 +6,7 @@ import { IPoint } from "../types/geometry/IPoint";
 import { IWorld } from "../types/IWorld";
 import { Point2D } from "../utils/geometry/Point2D";
 import { Bullet as BulletMessage } from "../types/socketEvents";
+import { loadImage } from "../utils/loadImage";
 
 export class Bullet extends ScreenObject implements IBullet {
   private _velocity: Vector2D;
@@ -13,6 +14,8 @@ export class Bullet extends ScreenObject implements IBullet {
   private _active: boolean = true;
   private _damage: number;
   private _weaponType: config.WeaponType = "blaster";
+  private static _imageRocket: HTMLImageElement | null = null;
+  private static _imageRocketBlast: HTMLImageElement | null = null;
 
   get weaponType(): config.WeaponType {
     return this._weaponType;
@@ -24,6 +27,10 @@ export class Bullet extends ScreenObject implements IBullet {
 
   get velocity(): Vector2D {
     return this._velocity;
+  }
+
+  set active(value: boolean) {
+    this._active = value;
   }
 
   constructor(
@@ -42,6 +49,21 @@ export class Bullet extends ScreenObject implements IBullet {
     this._velocity = Vector2D.fromAngle((rotation * Math.PI) / 180).multiply(
       this._speed
     );
+
+    // Preload rocket image
+    if (!Bullet._imageRocket) {
+      loadImage(config.TEXTURES.BULLET_ROCKET).then((img) => {
+        Bullet._imageRocket = img;
+      });
+    }
+
+    if (!Bullet._imageRocketBlast) {
+      loadImage(config.ANIMATIONS.EXPLOSION.image).then((image) => {
+        document.body.appendChild(image);
+        image.style.display = "none";
+        Bullet._imageRocketBlast = image;
+      });
+    }
   }
 
   static fromGameState(world: IWorld, bulletData: BulletMessage): Bullet {
@@ -80,7 +102,10 @@ export class Bullet extends ScreenObject implements IBullet {
     _: CanvasRenderingContext2D,
     millisecondsPassed?: number
   ): void {
-    if (!this._active && this._weaponType !== "railgun") {
+    if (
+      !this._active &&
+      !["railgun", "rocket_launcher"].includes(this._weaponType)
+    ) {
       return;
     }
 
@@ -122,6 +147,58 @@ export class Bullet extends ScreenObject implements IBullet {
       ctx.arc(endX, endY, glowSize, 0, Math.PI * 2);
       ctx.fill();
 
+      ctx.restore();
+      return;
+    }
+
+    if (this._weaponType === "rocket_launcher" && Bullet._imageRocket) {
+      if (!this._active && Bullet._imageRocketBlast && millisecondsPassed) {
+        // Draw explosion animation
+
+        const frameWidth =
+          Bullet._imageRocketBlast.width /
+          config.ANIMATIONS.EXPLOSION.frameCount;
+        const frameHeight = Bullet._imageRocketBlast.height;
+        const totalDuration = config.ANIMATIONS.EXPLOSION.duration;
+        const currentFrame = Math.floor(
+          (millisecondsPassed / totalDuration) *
+            config.ANIMATIONS.EXPLOSION.frameCount
+        );
+
+        if (currentFrame >= config.ANIMATIONS.EXPLOSION.frameCount) {
+          ctx.restore();
+          return; // Animation finished
+        }
+
+        ctx.drawImage(
+          Bullet._imageRocketBlast,
+          currentFrame * frameWidth,
+          0,
+          frameWidth,
+          frameHeight,
+          -frameWidth / 2,
+          -frameHeight / 2,
+          frameWidth,
+          frameHeight
+        );
+
+        ctx.restore();
+        return;
+      }
+
+      // Rotate rocket texture to match velocity direction
+      const angle = Math.atan2(this.velocity.y, this.velocity.x) + Math.PI / 2;
+      ctx.rotate(angle);
+      // Draw rocket texture
+      const textureWidth = Bullet._imageRocket.width;
+      const textureHeight = Bullet._imageRocket.height;
+      ctx.drawImage(
+        Bullet._imageRocket,
+        -textureWidth / 2,
+        -textureHeight / 2,
+        textureWidth,
+        textureHeight
+      );
       ctx.restore();
       return;
     }

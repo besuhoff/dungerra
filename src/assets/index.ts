@@ -18,6 +18,10 @@ import itemBlasterTexture from "./item-blaster.png";
 import itemAmmoShotgunTexture from "./item-ammo-shotgun.png";
 import itemAmmoRocketLauncherTexture from "./item-ammo-rocket-launcher.png";
 import itemAmmoRailgunTexture from "./item-ammo-railgun.png";
+import bulletRocketTexture from "./bullet-rocket.png";
+
+import explosionAnimation from "./explosion-animation.png";
+
 import bulletSound from "./blaster.ogg";
 import torchSound from "./torch.ogg";
 import gameOverSound from "./game-over.ogg";
@@ -53,6 +57,14 @@ export const Assets = {
   itemAmmoShotgunTexture,
   itemAmmoRocketLauncherTexture,
   itemAmmoRailgunTexture,
+  bulletRocketTexture,
+
+  explosionAnimation: {
+    image: explosionAnimation,
+    frameCount: 17,
+    duration: 800,
+  },
+
   bulletSound,
   torchSound,
   gameOverSound,

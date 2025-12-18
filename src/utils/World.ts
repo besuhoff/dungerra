@@ -265,9 +265,6 @@ export class World implements IWorld {
     // Draw bonuses
     this._bonuses.forEach((bonus) => bonus.draw(ctx, uiCtx));
 
-    // Draw bullets
-    this._bulletManager.draw(ctx, uiCtx);
-
     Object.values(this._otherPlayers).forEach((otherPlayer) => {
       otherPlayer.draw(ctx, uiCtx);
     });
@@ -276,6 +273,9 @@ export class World implements IWorld {
     if (this._player) {
       this._player.draw(ctx, uiCtx);
     }
+
+    // Draw bullets
+    this._bulletManager.draw(ctx, uiCtx);
 
     // Draw darkness overlay
     this.drawDarknessOverlay(lightCtx);
@@ -429,7 +429,7 @@ export class World implements IWorld {
       ctx.fillStyle = "white";
       ctx.font = `22px ${config.FONT_NAME}`;
       ctx.fillText(
-        `Lives: ${Array(this._player.lives).fill("❤️").join(" ")}`,
+        `Lives: ${Array(Math.floor(this._player.lives)).fill("❤️").join(" ")}`,
         10,
         30
       );
@@ -455,7 +455,7 @@ export class World implements IWorld {
     }
 
     // Draw inventory UI in the center bottom
-    if (this.inventoryTexture) {
+    if (this.inventoryTexture && !this.gameOver) {
       const width = this.inventoryTexture.width;
       const height = this.inventoryTexture.height;
 
@@ -796,7 +796,7 @@ export class World implements IWorld {
         );
       }
 
-      this._bulletManager.unregisterShot(bulletData.id);
+      this._bulletManager.unregisterShot(bulletData.id, !bulletData.isActive);
     }
   }
 }

@@ -43,13 +43,38 @@ export class BulletManager implements IBulletManager {
     );
   }
 
-  unregisterShot(bulletId: string): void {
+  unregisterShot(bulletId: string, deactivate: boolean = false): void {
     if (this._bullets.has(bulletId)) {
       const bullet = this._bullets.get(bulletId)!;
-      if (!bullet.active && !this._inactiveBulletsDrawnCache.has(bulletId)) {
+      if (
+        (!bullet.active || deactivate) &&
+        !this._inactiveBulletsDrawnCache.has(bulletId)
+      ) {
+        if (
+          bullet.active &&
+          deactivate &&
+          bullet.weaponType === "rocket_launcher"
+        ) {
+          // Play sound
+          const distance = bullet
+            .getPosition()
+            .distanceTo(this.world.player!.getPosition());
+          const maxDistance = this.world.torchRadius * 2;
+          const volume =
+            distance >= maxDistance ? 0 : 1 - distance / maxDistance;
+          AudioManager.getInstance().playSound(
+            config.SOUNDS.ROCKET_BLAST,
+            volume
+          );
+        }
+
+        bullet.active = false;
         this._inactiveBulletsCache.push({
           bullet,
-          lifetime: 200,
+          lifetime:
+            bullet.weaponType === "rocket_launcher"
+              ? config.ANIMATIONS.EXPLOSION.duration
+              : 200,
           addedAt: Date.now(),
         });
       }
