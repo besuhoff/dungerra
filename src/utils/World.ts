@@ -15,7 +15,7 @@ import { loadImage } from "./loadImage";
 import { Point2D } from "./geometry/Point2D";
 import { AudioManager } from "./AudioManager";
 import { SessionManager } from "../api/SessionManager";
-import { Player as PlayerMessage } from "../types/socketEvents";
+import { InventoryItem, Player as PlayerMessage } from "../types/socketEvents";
 import {
   IOtherPlayer,
   IOtherPlayerFactory,
@@ -43,7 +43,13 @@ export class World implements IWorld {
 
   private _gameOver: boolean = false;
   private _paused: boolean = false;
+
   private floorTexture: HTMLImageElement | null = null;
+  private inventoryTexture: HTMLImageElement | null = null;
+  private inventoryItemTextures: Partial<
+    Record<config.InventoryItemID, HTMLImageElement>
+  > = {};
+
   private chunks: Map<string, IChunk> = new Map();
   private _cameraPoint: IPoint = new Point2D(0, 0);
   private _torchRadius: number = config.TORCH_RADIUS;
@@ -137,6 +143,20 @@ export class World implements IWorld {
     loadImage(config.TEXTURES.FLOOR).then((img) => {
       this.floorTexture = img;
     });
+
+    // Load inventory texture
+    loadImage(config.TEXTURES.INVENTORY).then((img) => {
+      this.inventoryTexture = img;
+    });
+
+    Object.entries(config.INVENTORY_ITEM_TEXTURES).forEach(
+      ([key, texturePath]) => {
+        loadImage(texturePath).then((img) => {
+          this.inventoryItemTextures[Number(key) as config.InventoryItemID] =
+            img;
+        });
+      }
+    );
 
     this._bulletManager = new this._BulletManager(this);
   }
@@ -245,6 +265,9 @@ export class World implements IWorld {
     // Draw bonuses
     this._bonuses.forEach((bonus) => bonus.draw(ctx, uiCtx));
 
+    // Draw bullets
+    this._bulletManager.draw(ctx, uiCtx);
+
     Object.values(this._otherPlayers).forEach((otherPlayer) => {
       otherPlayer.draw(ctx, uiCtx);
     });
@@ -253,9 +276,6 @@ export class World implements IWorld {
     if (this._player) {
       this._player.draw(ctx, uiCtx);
     }
-
-    // Draw bullets
-    this._bulletManager.draw(ctx, uiCtx);
 
     // Draw darkness overlay
     this.drawDarknessOverlay(lightCtx);
@@ -431,6 +451,88 @@ export class World implements IWorld {
           10,
           120
         );
+      }
+    }
+
+    // Draw inventory UI in the center bottom
+    if (this.inventoryTexture) {
+      const width = this.inventoryTexture.width;
+      const height = this.inventoryTexture.height;
+
+      ctx.drawImage(
+        this.inventoryTexture,
+        config.SCREEN_WIDTH / 2 - width / 2,
+        config.SCREEN_HEIGHT - height - 50,
+        width,
+        height
+      );
+
+      const player = this._player;
+
+      if (player.inventory) {
+        player.inventory.forEach((item) => {
+          const isAmmo = config.AMMO_ITEM_IDS.includes(
+            item.type as config.InventoryItemID
+          );
+          const itemX = (isAmmo ? item.type - 20 : item.type) * 41 - 18;
+          const itemY = isAmmo ? 22 : 64;
+
+          const texture =
+            this.inventoryItemTextures[item.type as config.InventoryItemID];
+
+          if (!texture) {
+            return;
+          }
+
+          ctx.drawImage(
+            texture,
+            config.SCREEN_WIDTH / 2 - width / 2 + itemX - texture.width / 2,
+            config.SCREEN_HEIGHT - height - 50 + itemY - texture.height / 2,
+            texture.width,
+            texture.height
+          );
+
+          if (item.quantity > 1) {
+            // Draw a background for better readability
+            ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+            ctx.fillRect(
+              config.SCREEN_WIDTH / 2 - width / 2 + itemX - texture.width / 2,
+              config.SCREEN_HEIGHT -
+                height -
+                50 +
+                itemY +
+                texture.height / 2 -
+                16,
+              texture.width,
+              16
+            );
+
+            // Draw quantity
+            ctx.fillStyle = "white";
+            ctx.font = `16px ${config.FONT_NAME}`;
+            ctx.textAlign = "right";
+            ctx.fillText(
+              `x${item.quantity}`,
+              config.SCREEN_WIDTH / 2 - width / 2 + itemX + texture.width / 2,
+              config.SCREEN_HEIGHT - height - 50 + itemY + texture.height / 2
+            );
+          }
+
+          if (
+            item.type ===
+            config.WEAPON_INVENTORY_ID_BY_WEAPON_TYPE[player.selectedGunType]
+          ) {
+            // Highlight the selected weapon in the inventory
+            ctx.strokeStyle = "yellow";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(
+              config.SCREEN_WIDTH / 2 - width / 2 + itemX - texture.width / 2,
+              config.SCREEN_HEIGHT - height - 50 + itemY - texture.height / 2,
+              texture.width,
+              texture.height
+            );
+          }
+        });
       }
     }
 

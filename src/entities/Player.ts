@@ -6,7 +6,10 @@ import { IPoint } from "../types/geometry/IPoint";
 import { IWorld } from "../types/IWorld";
 import { loadImage } from "../utils/loadImage";
 import { AudioManager } from "../utils/AudioManager";
-import { Player as PlayerMessage } from "../types/socketEvents";
+import {
+  InventoryItem as InventoryItemMessage,
+  Player as PlayerMessage,
+} from "../types/socketEvents";
 import { SessionPlayer } from "../types/session";
 import { Point2D } from "../utils/geometry/Point2D";
 
@@ -25,6 +28,7 @@ export class Player extends ScreenObject implements IPlayer {
   private _kills: number = 0;
   private _money: number = 0;
   private _selectedGunType: config.WeaponType = "blaster";
+  private _inventory: InventoryItemMessage[] = [];
 
   private _invulnerableTimer: number = 0;
   // private _rechargeAccumulator: number = 0;
@@ -60,6 +64,10 @@ export class Player extends ScreenObject implements IPlayer {
 
   get selectedGunType(): config.WeaponType {
     return this._selectedGunType;
+  }
+
+  get inventory(): InventoryItemMessage[] {
+    return this._inventory;
   }
 
   static createFromSessionPlayer(
@@ -327,5 +335,20 @@ export class Player extends ScreenObject implements IPlayer {
     this._selectedGunType = changeset.selectedGunType as config.WeaponType;
     this._invulnerableTimer = changeset.invulnerableTimer;
     this._nightVisionTimer = changeset.nightVisionTimer;
+
+    this._inventory.forEach((item) => {
+      const updatedItem = changeset.inventory.find(
+        (newItem) => newItem.type === item.type
+      );
+      if (
+        config.INVENTORY_ITEM_BONUS.includes(item.type) &&
+        updatedItem &&
+        updatedItem?.quantity != item.quantity
+      ) {
+        AudioManager.getInstance().playSound(config.SOUNDS.BONUS_PICKUP);
+      }
+    });
+
+    this._inventory = changeset.inventory;
   }
 }

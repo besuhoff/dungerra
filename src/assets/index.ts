@@ -10,6 +10,14 @@ import aidKitTexture from "./aid-kit.png";
 import gogglesTexture from "./goggles.png";
 import heartTexture from "./heart.png";
 import shopTexturne from "./shop.png";
+import inventoryTexture from "./inventory.png";
+import itemRailgunTexture from "./item-railgun.png";
+import itemRocketLauncherTexture from "./item-rocket-launcher.png";
+import itemShotgunTexture from "./item-shotgun.png";
+import itemBlasterTexture from "./item-blaster.png";
+import itemAmmoShotgunTexture from "./item-ammo-shotgun.png";
+import itemAmmoRocketLauncherTexture from "./item-ammo-rocket-launcher.png";
+import itemAmmoRailgunTexture from "./item-ammo-railgun.png";
 import bulletSound from "./blaster.ogg";
 import torchSound from "./torch.ogg";
 import gameOverSound from "./game-over.ogg";
@@ -37,6 +45,14 @@ export const Assets = {
   gogglesTexture,
   heartTexture,
   shopTexturne,
+  inventoryTexture,
+  itemRailgunTexture,
+  itemRocketLauncherTexture,
+  itemShotgunTexture,
+  itemBlasterTexture,
+  itemAmmoShotgunTexture,
+  itemAmmoRocketLauncherTexture,
+  itemAmmoRailgunTexture,
   bulletSound,
   torchSound,
   gameOverSound,

@@ -97,6 +97,15 @@ export const TEXTURES = {
   GOGGLES: Assets.gogglesTexture,
   HEART: Assets.heartTexture,
   SHOP: Assets.shopTexturne,
+
+  INVENTORY: Assets.inventoryTexture,
+  ITEM_RAILGUN: Assets.itemRailgunTexture,
+  ITEM_ROCKET_LAUNCHER: Assets.itemRocketLauncherTexture,
+  ITEM_SHOTGUN: Assets.itemShotgunTexture,
+  ITEM_BLASTER: Assets.itemBlasterTexture,
+  ITEM_AMMO_SHOTGUN: Assets.itemAmmoShotgunTexture,
+  ITEM_AMMO_ROCKET_LAUNCHER: Assets.itemAmmoRocketLauncherTexture,
+  ITEM_AMMO_RAILGUN: Assets.itemAmmoRailgunTexture,
 };
 
 export const SOUNDS = {
@@ -124,6 +133,43 @@ export const WEAPON_TYPES: readonly WeaponType[] = [
   "rocket_launcher",
 ] as const;
 
+export const INVENTORY_ITEM_IDS = {
+  BLASTER: 1,
+  SHOTGUN: 2,
+  ROCKET_LAUNCHER: 3,
+  RAILGUN: 4,
+  AMMO_SHOTGUN: 22,
+  AMMO_ROCKET_LAUNCHER: 23,
+  AMMO_RAILGUN: 24,
+  GOGGLES: 7,
+  AID_KIT: 8,
+} as const;
+
+export type InventoryItemID =
+  (typeof INVENTORY_ITEM_IDS)[keyof typeof INVENTORY_ITEM_IDS];
+
+export const AMMO_ITEM_IDS: InventoryItemID[] = [
+  INVENTORY_ITEM_IDS.AMMO_SHOTGUN,
+  INVENTORY_ITEM_IDS.AMMO_ROCKET_LAUNCHER,
+  INVENTORY_ITEM_IDS.AMMO_RAILGUN,
+];
+
+export const INVENTORY_ITEM_TEXTURES: Partial<Record<InventoryItemID, string>> =
+  {
+    [INVENTORY_ITEM_IDS.BLASTER]: TEXTURES.ITEM_BLASTER,
+    [INVENTORY_ITEM_IDS.SHOTGUN]: TEXTURES.ITEM_SHOTGUN,
+    [INVENTORY_ITEM_IDS.ROCKET_LAUNCHER]: TEXTURES.ITEM_ROCKET_LAUNCHER,
+    [INVENTORY_ITEM_IDS.RAILGUN]: TEXTURES.ITEM_RAILGUN,
+
+    [INVENTORY_ITEM_IDS.AMMO_SHOTGUN]: TEXTURES.ITEM_AMMO_SHOTGUN,
+    [INVENTORY_ITEM_IDS.AMMO_ROCKET_LAUNCHER]:
+      TEXTURES.ITEM_AMMO_ROCKET_LAUNCHER,
+    [INVENTORY_ITEM_IDS.AMMO_RAILGUN]: TEXTURES.ITEM_AMMO_RAILGUN,
+
+    [INVENTORY_ITEM_IDS.AID_KIT]: TEXTURES.AID_KIT,
+    [INVENTORY_ITEM_IDS.GOGGLES]: TEXTURES.GOGGLES,
+  };
+
 export const BULLET_SOUND_BY_WEAPON_TYPE: Record<WeaponType, string> = {
   blaster: SOUNDS.BULLET,
   shotgun: SOUNDS.SHOTGUN,
@@ -143,6 +189,15 @@ export const AMMO_INVENTORY_ID_BY_WEAPON_TYPE: Partial<
   rocket_launcher: 23,
   railgun: 24,
 } as const;
+
+export const WEAPON_INVENTORY_ID_BY_WEAPON_TYPE: Record<WeaponType, number> = {
+  blaster: 1,
+  shotgun: 2,
+  rocket_launcher: 3,
+  railgun: 4,
+};
+
+export const INVENTORY_ITEM_BONUS = [7, 8];
 
 export const BULLET_SYMBOL: Record<WeaponType, string> = {
   blaster: "●",

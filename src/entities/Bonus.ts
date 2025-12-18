@@ -5,7 +5,6 @@ import { IWorld } from "../types/IWorld";
 import { ScreenObject } from "./ScreenObject";
 import { loadImage } from "../utils/loadImage";
 import * as config from "../config";
-import { AudioManager } from "../utils/AudioManager";
 
 export class Bonus extends ScreenObject implements IBonus {
   public type: BonusType;
@@ -36,8 +35,6 @@ export class Bonus extends ScreenObject implements IBonus {
     loadImage(texturePath).then((img) => {
       this.image = img;
     });
-
-    AudioManager.getInstance().loadSound(config.SOUNDS.BONUS_PICKUP);
   }
 
   draw(ctx: CanvasRenderingContext2D): void {
