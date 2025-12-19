@@ -18,7 +18,6 @@ export interface IWorld {
   enemies: IEnemy[];
   bonuses: IBonus[];
   gameOver: boolean;
-  paused: boolean;
   cameraPoint: IPoint;
   torchRadius: number;
   debug: boolean;
@@ -27,7 +26,6 @@ export interface IWorld {
   toggleDebug(): void;
   restart(): void;
   endGame(): void;
-  togglePause(): void;
   update(dt: number): void;
   draw(
     ctx: CanvasRenderingContext2D,

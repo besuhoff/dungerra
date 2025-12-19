@@ -42,7 +42,7 @@ export class World implements IWorld {
   private _bonuses: IBonus[] = [];
 
   private _gameOver: boolean = false;
-  private _paused: boolean = false;
+  private _inventoryOpen: boolean = true;
 
   private floorTexture: HTMLImageElement | null = null;
   private inventoryTexture: HTMLImageElement | null = null;
@@ -80,10 +80,6 @@ export class World implements IWorld {
 
   get gameOver(): boolean {
     return this._gameOver;
-  }
-
-  get paused(): boolean {
-    return this._paused;
   }
 
   get player(): IPlayer | null {
@@ -191,7 +187,7 @@ export class World implements IWorld {
   }
 
   update(dt: number): void {
-    if (this.gameOver || this.paused) return;
+    if (this.gameOver) return;
 
     // Update player
     if (this._player) {
@@ -388,10 +384,6 @@ export class World implements IWorld {
     }
   }
 
-  togglePause(): void {
-    this._paused = !this.paused;
-  }
-
   restart(): void {
     this._sessionManager.notifyRespawn(this._player!);
   }
@@ -457,7 +449,7 @@ export class World implements IWorld {
     }
 
     // Draw inventory UI in the center bottom
-    if (this.inventoryTexture && !this.gameOver) {
+    if (this.inventoryTexture && !this.gameOver && this._inventoryOpen) {
       const width = this.inventoryTexture.width;
       const height = this.inventoryTexture.height;
 
@@ -795,5 +787,9 @@ export class World implements IWorld {
 
       this._bulletManager.applyFromGameState(bulletData, true);
     }
+  }
+
+  toggleInventory(): void {
+    this._inventoryOpen = !this._inventoryOpen;
   }
 }

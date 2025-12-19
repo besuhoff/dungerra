@@ -121,14 +121,14 @@ export class Game {
   }
 
   private handleKeyDown(e: KeyboardEvent): void {
-    if (e.key === "p") {
-      this._world?.togglePause();
-    }
     if (e.key === "F3") {
       this._world?.toggleDebug();
     }
-    if (["r", "R"].includes(e.key) && this._world?.gameOver) {
+    if (e.code === "KeyR" && this._world?.gameOver) {
       this._world?.restart();
+    }
+    if (e.code === "KeyE" || e.code === "Backquote") {
+      this._world?.toggleInventory();
     }
   }
 
