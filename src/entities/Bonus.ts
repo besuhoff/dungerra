@@ -5,7 +5,6 @@ import { IWorld } from "../types/IWorld";
 import { ScreenObject } from "./ScreenObject";
 import { loadImage } from "../utils/loadImage";
 import * as config from "../config";
-import { AudioManager } from "../utils/AudioManager";
 
 export class Bonus extends ScreenObject implements IBonus {
   public type: BonusType;
@@ -36,8 +35,6 @@ export class Bonus extends ScreenObject implements IBonus {
     loadImage(texturePath).then((img) => {
       this.image = img;
     });
-
-    AudioManager.getInstance().loadSound(config.SOUNDS.BONUS_PICKUP);
   }
 
   draw(ctx: CanvasRenderingContext2D): void {
@@ -47,10 +44,24 @@ export class Bonus extends ScreenObject implements IBonus {
 
     const player = this.world.player;
     const distance = this.getPosition().distanceTo(player.getPosition());
-    const shouldDraw =
+    let shouldDraw =
       (distance <= this.world.torchRadius + this.width ||
         player.hasNightVision()) &&
       !this.world.gameOver;
+
+    for (const otherPlayer of this.world.otherPlayers) {
+      if (otherPlayer.hasNightVision()) {
+        continue;
+      }
+
+      const distToOther = this.getPosition().distanceTo(
+        otherPlayer.getPosition()
+      );
+      if (distToOther <= this.world.torchRadius + this.width) {
+        shouldDraw = true;
+        break;
+      }
+    }
 
     if (!shouldDraw) {
       return;

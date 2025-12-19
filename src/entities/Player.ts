@@ -6,19 +6,29 @@ import { IPoint } from "../types/geometry/IPoint";
 import { IWorld } from "../types/IWorld";
 import { loadImage } from "../utils/loadImage";
 import { AudioManager } from "../utils/AudioManager";
-import { Player as PlayerMessage } from "../types/socketEvents";
+import {
+  InventoryItem as InventoryItemMessage,
+  Player as PlayerMessage,
+} from "../types/socketEvents";
 import { SessionPlayer } from "../types/session";
 import { Point2D } from "../utils/geometry/Point2D";
 
 export class Player extends ScreenObject implements IPlayer {
   private _nightVisionTimer: number = 0;
-  private _image: HTMLImageElement | null = null;
+  private _images: Record<config.WeaponType, HTMLImageElement | null> = {
+    blaster: null,
+    shotgun: null,
+    railgun: null,
+    rocket_launcher: null,
+  };
   private _imageDead: HTMLImageElement | null = null;
   private _rotation: number = 0;
   private _bullets: IBullet[] = [];
   private _bulletsLeft: number = config.PLAYER_MAX_BULLETS;
   private _kills: number = 0;
   private _money: number = 0;
+  private _selectedGunType: config.WeaponType = "blaster";
+  private _inventory: InventoryItemMessage[] = [];
 
   private _invulnerableTimer: number = 0;
   // private _rechargeAccumulator: number = 0;
@@ -52,6 +62,14 @@ export class Player extends ScreenObject implements IPlayer {
     return this._nightVisionTimer;
   }
 
+  get selectedGunType(): config.WeaponType {
+    return this._selectedGunType;
+  }
+
+  get inventory(): InventoryItemMessage[] {
+    return this._inventory;
+  }
+
   static createFromSessionPlayer(
     world: IWorld,
     sessionPlayer: SessionPlayer
@@ -79,16 +97,21 @@ export class Player extends ScreenObject implements IPlayer {
 
     this._rotation = rotation;
 
-    // Load sounds
-    const audioManager = AudioManager.getInstance();
-    audioManager.loadSound(config.SOUNDS.BULLET);
-    audioManager.loadSound(config.SOUNDS.PLAYER_HURT);
-    audioManager.loadSound(config.SOUNDS.PLAYER_BULLET_RECHARGE);
-
     // Load player sprite
-    loadImage(config.TEXTURES.PLAYER).then((img) => {
-      this._image = img;
+    loadImage(config.PLAYER_TEXTURE_BY_WEAPON_TYPE.blaster).then((img) => {
+      this._images.blaster = img;
     });
+    loadImage(config.PLAYER_TEXTURE_BY_WEAPON_TYPE.shotgun).then((img) => {
+      this._images.shotgun = img;
+    });
+    loadImage(config.PLAYER_TEXTURE_BY_WEAPON_TYPE.railgun).then((img) => {
+      this._images.railgun = img;
+    });
+    loadImage(config.PLAYER_TEXTURE_BY_WEAPON_TYPE.rocket_launcher).then(
+      (img) => {
+        this._images.rocket_launcher = img;
+      }
+    );
 
     loadImage(config.TEXTURES.BLOOD).then((img) => {
       this._imageDead = img;
@@ -142,7 +165,7 @@ export class Player extends ScreenObject implements IPlayer {
       bullet.draw(ctx, uiCtx);
     });
 
-    if (!this._image || !this._imageDead) {
+    if (!this._images[this._selectedGunType] || !this._imageDead) {
       return;
     }
 
@@ -159,14 +182,16 @@ export class Player extends ScreenObject implements IPlayer {
     ctx.translate(screenPoint.x, screenPoint.y);
 
     if ((this._invulnerableTimer <= 0 || shouldBlink) && !this.world.gameOver) {
-      const image = this.isAlive() ? this._image : this._imageDead;
+      const image = this.isAlive()
+        ? this._images[this._selectedGunType]!
+        : this._imageDead;
       const imageSize = this.isAlive()
         ? config.PLAYER_TEXTURE_SIZE
         : config.BLOOD_TEXTURE_SIZE;
       // Draw player sprite
       ctx.rotate((this._rotation * Math.PI) / 180);
       ctx.drawImage(
-        this.isAlive() ? this._image : this._imageDead,
+        this.isAlive() ? this._images[this._selectedGunType]! : this._imageDead,
         texturePoint.x,
         texturePoint.y,
         imageSize,
@@ -274,14 +299,56 @@ export class Player extends ScreenObject implements IPlayer {
 
     this._money = changeset.money;
     this._kills = changeset.kills;
-    if (this._bulletsLeft < changeset.bulletsLeft) {
+
+    if (
+      changeset.selectedGunType === this._selectedGunType &&
+      !config.WEAPON_TYPES_FROM_INVENTORY.includes(
+        changeset.selectedGunType as config.WeaponType
+      ) &&
+      this._bulletsLeft <
+        changeset.bulletsLeftByWeaponType[changeset.selectedGunType]
+    ) {
       AudioManager.getInstance().playSound(
         config.SOUNDS.PLAYER_BULLET_RECHARGE,
-        0.5
+        { volume: 0.5 }
       );
     }
-    this._bulletsLeft = changeset.bulletsLeft;
+
+    if (
+      config.WEAPON_TYPES_FROM_INVENTORY.includes(
+        changeset.selectedGunType as config.WeaponType
+      )
+    ) {
+      const inventoryItemId =
+        config.AMMO_INVENTORY_ID_BY_WEAPON_TYPE[
+          changeset.selectedGunType as keyof typeof config.AMMO_INVENTORY_ID_BY_WEAPON_TYPE
+        ];
+      const inventoryItem = changeset.inventory.find(
+        (item) => item.type === inventoryItemId
+      );
+      this._bulletsLeft = inventoryItem?.quantity ?? 0;
+    } else {
+      this._bulletsLeft =
+        changeset.bulletsLeftByWeaponType[changeset.selectedGunType] ?? 0;
+    }
+
+    this._selectedGunType = changeset.selectedGunType as config.WeaponType;
     this._invulnerableTimer = changeset.invulnerableTimer;
     this._nightVisionTimer = changeset.nightVisionTimer;
+
+    this._inventory.forEach((item) => {
+      const updatedItem = changeset.inventory.find(
+        (newItem) => newItem.type === item.type
+      );
+      if (
+        config.INVENTORY_ITEM_BONUS.includes(item.type) &&
+        updatedItem &&
+        updatedItem?.quantity != item.quantity
+      ) {
+        AudioManager.getInstance().playSound(config.SOUNDS.BONUS_PICKUP);
+      }
+    });
+
+    this._inventory = changeset.inventory;
   }
 }

@@ -15,7 +15,7 @@ import { loadImage } from "./loadImage";
 import { Point2D } from "./geometry/Point2D";
 import { AudioManager } from "./AudioManager";
 import { SessionManager } from "../api/SessionManager";
-import { Player as PlayerMessage } from "../types/socketEvents";
+import { InventoryItem, Player as PlayerMessage } from "../types/socketEvents";
 import {
   IOtherPlayer,
   IOtherPlayerFactory,
@@ -43,17 +43,22 @@ export class World implements IWorld {
 
   private _gameOver: boolean = false;
   private _paused: boolean = false;
+
   private floorTexture: HTMLImageElement | null = null;
+  private inventoryTexture: HTMLImageElement | null = null;
+  private inventoryItemTextures: Partial<
+    Record<config.InventoryItemID, HTMLImageElement>
+  > = {};
+
   private chunks: Map<string, IChunk> = new Map();
-  private generatedChunks: Set<string> = new Set();
   private _cameraPoint: IPoint = new Point2D(0, 0);
   private _torchRadius: number = config.TORCH_RADIUS;
   private _debug = false;
-  private crowdednessFactor = 5;
 
   private _sessionManager = SessionManager.getInstance();
   private _bulletManager: IBulletManager;
   private _lastChangesetTimestamp: number = 0;
+  private _bonusPickupCache: Set<string> = new Set();
 
   private _previousInputState: InputMessage = {
     forward: false,
@@ -61,6 +66,7 @@ export class World implements IWorld {
     left: false,
     right: false,
     shoot: false,
+    itemKey: {},
   };
   private _inputStateSubmitTimestamp: number = 0;
 
@@ -130,13 +136,27 @@ export class World implements IWorld {
     const audioManager = AudioManager.getInstance();
     audioManager.loadSound(config.SOUNDS.TORCH).then(() => {
       // Start playing torch sound in a loop
-      audioManager.playSound(config.SOUNDS.TORCH, 1, true);
+      audioManager.playSound(config.SOUNDS.TORCH, { volume: 1, loop: true });
     });
 
     // Load floor texture
     loadImage(config.TEXTURES.FLOOR).then((img) => {
       this.floorTexture = img;
     });
+
+    // Load inventory texture
+    loadImage(config.TEXTURES.INVENTORY).then((img) => {
+      this.inventoryTexture = img;
+    });
+
+    Object.entries(config.INVENTORY_ITEM_TEXTURES).forEach(
+      ([key, texturePath]) => {
+        loadImage(texturePath).then((img) => {
+          this.inventoryItemTextures[Number(key) as config.InventoryItemID] =
+            img;
+        });
+      }
+    );
 
     this._bulletManager = new this._BulletManager(this);
   }
@@ -163,133 +183,11 @@ export class World implements IWorld {
     delete this._otherPlayers[playerId];
   }
 
-  private getChunkKey(x: number, y: number): string {
-    return `${x},${y}`;
-  }
-
   private getChunkLeftTop(worldPoint: IPoint): IPoint {
     return new Point2D(
       Math.floor(worldPoint.x / this.CHUNK_SIZE),
       Math.floor(worldPoint.y / this.CHUNK_SIZE)
     );
-  }
-
-  private getPlayerChunkLeftTop(): IPoint {
-    if (!this._player) {
-      return new Point2D(0, 0);
-    }
-
-    return this.getChunkLeftTop(this._player.getPosition());
-  }
-
-  private generateWallsForChunk(chunkPoint: IPoint): void {
-    if (!this._player) {
-      return;
-    }
-
-    const chunkKey = this.getChunkKey(chunkPoint.x, chunkPoint.y);
-    // Mark chunk as generated
-    this.generatedChunks.add(chunkKey);
-
-    // Calculate chunk boundaries
-    const chunkStartX = chunkPoint.x * this.CHUNK_SIZE;
-    const chunkStartY = chunkPoint.y * this.CHUNK_SIZE;
-    const newWalls: IWall[] = [];
-    const newEnemies: IEnemy[] = [];
-
-    // Generate random walls in this chunk, corresponding to the crowdedness factor
-    const numWalls =
-      Math.floor(Math.random() * this.crowdednessFactor) +
-      this.crowdednessFactor;
-    const neighboringWalls = this._walls;
-    const safePaddingAroundPlayer = this.torchRadius + 40;
-
-    for (let i = 0; i < numWalls; i++) {
-      // Randomly decide wall orientation
-      const orientation = Math.random() < 0.5 ? "vertical" : "horizontal";
-      let x: number, y: number, width: number, height: number;
-
-      if (orientation === "vertical") {
-        x = Math.floor(
-          Math.random() * (this.CHUNK_SIZE - 200) + chunkStartX + 100
-        );
-        y = Math.floor(
-          Math.random() * (this.CHUNK_SIZE - 300) + chunkStartY + 100
-        );
-        width = 30;
-        height = Math.floor(Math.random() * 101) + 200; // 200-300
-      } else {
-        x = Math.floor(
-          Math.random() * (this.CHUNK_SIZE - 300) + chunkStartX + 100
-        );
-        y = Math.floor(
-          Math.random() * (this.CHUNK_SIZE - 200) + chunkStartY + 100
-        );
-        width = Math.floor(Math.random() * 101) + 200; // 200-300
-        height = 30;
-      }
-
-      const newNeighbors = neighboringWalls.concat(newWalls);
-      // Check if the wall overlaps with existing walls
-      let overlaps = false;
-      for (const wall of newNeighbors) {
-        const rect1 = wall.getCollisionRect();
-        const rect2 = {
-          left: x - width / 2,
-          top: y - height / 2,
-          width,
-          height,
-        };
-
-        // Add padding to prevent walls from being too close
-        const padding = 40;
-        if (
-          rect1.left < rect2.left + rect2.width + padding &&
-          rect1.left + rect1.width + padding > rect2.left &&
-          rect1.top < rect2.top + rect2.height + padding &&
-          rect1.top + rect1.height + padding > rect2.top
-        ) {
-          overlaps = true;
-          break;
-        }
-      }
-
-      if (!overlaps) {
-        const wall = new this._Wall(
-          this,
-          new Point2D(x, y),
-          width,
-          height,
-          orientation
-        );
-
-        if (
-          wall.checkCollision(
-            this._player.x - safePaddingAroundPlayer,
-            this._player.y - safePaddingAroundPlayer,
-            safePaddingAroundPlayer * 2,
-            safePaddingAroundPlayer * 2
-          )
-        ) {
-          continue;
-        }
-
-        newWalls.push(wall);
-
-        // Create enemy for each wall
-        const enemy = new this._Enemy(this, wall, neighboringWalls);
-        newEnemies.push(enemy);
-      }
-    }
-
-    // Store chunk data
-    this.chunks.set(chunkKey, {
-      x: chunkPoint.x,
-      y: chunkPoint.y,
-      walls: newWalls,
-      enemies: newEnemies,
-      bonuses: [],
-    });
   }
 
   update(dt: number): void {
@@ -364,9 +262,6 @@ export class World implements IWorld {
     // Draw enemies
     this._enemies.forEach((enemy) => enemy.draw(ctx, uiCtx));
 
-    // Draw bullets
-    this._bulletManager.draw(ctx, uiCtx);
-
     // Draw bonuses
     this._bonuses.forEach((bonus) => bonus.draw(ctx, uiCtx));
 
@@ -378,6 +273,9 @@ export class World implements IWorld {
     if (this._player) {
       this._player.draw(ctx, uiCtx);
     }
+
+    // Draw bullets
+    this._bulletManager.draw(ctx, uiCtx);
 
     // Draw darkness overlay
     this.drawDarknessOverlay(lightCtx);
@@ -453,12 +351,21 @@ export class World implements IWorld {
     const shoot = keys.has("Space");
     const now = Date.now();
 
+    const itemKey: { [key: number]: boolean } = {};
+    for (let i = 1; i <= 9; i++) {
+      if (keys.has(`Digit${i}`)) {
+        itemKey[i] = true;
+      }
+    }
+
     if (
       forward !== this._previousInputState.forward ||
       backward !== this._previousInputState.backward ||
       left !== this._previousInputState.left ||
       right !== this._previousInputState.right ||
       shoot !== this._previousInputState.shoot ||
+      JSON.stringify(itemKey) !==
+        JSON.stringify(this._previousInputState.itemKey) ||
       now - this._inputStateSubmitTimestamp > 1000
     ) {
       this._sessionManager.notifyInput({
@@ -467,8 +374,16 @@ export class World implements IWorld {
         left,
         right,
         shoot,
+        itemKey,
       });
-      this._previousInputState = { forward, backward, left, right, shoot };
+      this._previousInputState = {
+        forward,
+        backward,
+        left,
+        right,
+        shoot,
+        itemKey,
+      };
       this._inputStateSubmitTimestamp = now;
     }
   }
@@ -514,18 +429,23 @@ export class World implements IWorld {
       ctx.fillStyle = "white";
       ctx.font = `22px ${config.FONT_NAME}`;
       ctx.fillText(
-        `Lives: ${Array(this._player.lives).fill("❤️").join(" ")}`,
+        `Lives: ${Array(Math.floor(this._player.lives)).fill("❤️").join(" ")}`,
         10,
         30
       );
       ctx.fillStyle = "yellow";
       ctx.fillText(`Rewards: ${this._player.money.toFixed(0)}$`, 10, 60);
       ctx.fillStyle = "cyan";
-      ctx.fillText(
-        `Bullets: ${Array(this._player.bulletsLeft).fill("⏽").join("")}`,
-        10,
-        90
-      );
+
+      const symbol = config.BULLET_SYMBOL[this._player.selectedGunType];
+      const bulletsLeft = this._player.bulletsLeft;
+      const bulletsDisplay =
+        bulletsLeft === 0
+          ? "-"
+          : bulletsLeft < 6
+            ? Array(bulletsLeft).fill(symbol).join("")
+            : `${symbol} x ${bulletsLeft}`;
+      ctx.fillText(`Bullets: ${bulletsDisplay}`, 10, 90);
       if (this._player.hasNightVision()) {
         ctx.fillStyle = "#90ff90";
         ctx.fillText(
@@ -533,6 +453,88 @@ export class World implements IWorld {
           10,
           120
         );
+      }
+    }
+
+    // Draw inventory UI in the center bottom
+    if (this.inventoryTexture && !this.gameOver) {
+      const width = this.inventoryTexture.width;
+      const height = this.inventoryTexture.height;
+
+      ctx.drawImage(
+        this.inventoryTexture,
+        config.SCREEN_WIDTH / 2 - width / 2,
+        config.SCREEN_HEIGHT - height - 50,
+        width,
+        height
+      );
+
+      const player = this._player;
+
+      if (player.inventory) {
+        player.inventory.forEach((item) => {
+          const isAmmo = config.AMMO_ITEM_IDS.includes(
+            item.type as config.InventoryItemID
+          );
+          const itemX = (isAmmo ? item.type - 20 : item.type) * 41 - 18;
+          const itemY = isAmmo ? 22 : 64;
+
+          const texture =
+            this.inventoryItemTextures[item.type as config.InventoryItemID];
+
+          if (!texture) {
+            return;
+          }
+
+          ctx.drawImage(
+            texture,
+            config.SCREEN_WIDTH / 2 - width / 2 + itemX - texture.width / 2,
+            config.SCREEN_HEIGHT - height - 50 + itemY - texture.height / 2,
+            texture.width,
+            texture.height
+          );
+
+          if (item.quantity > 1) {
+            // Draw a background for better readability
+            ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+            ctx.fillRect(
+              config.SCREEN_WIDTH / 2 - width / 2 + itemX - texture.width / 2,
+              config.SCREEN_HEIGHT -
+                height -
+                50 +
+                itemY +
+                texture.height / 2 -
+                16,
+              texture.width,
+              16
+            );
+
+            // Draw quantity
+            ctx.fillStyle = "white";
+            ctx.font = `16px ${config.FONT_NAME}`;
+            ctx.textAlign = "right";
+            ctx.fillText(
+              `x${item.quantity}`,
+              config.SCREEN_WIDTH / 2 - width / 2 + itemX + texture.width / 2,
+              config.SCREEN_HEIGHT - height - 50 + itemY + texture.height / 2
+            );
+          }
+
+          if (
+            item.type ===
+            config.WEAPON_INVENTORY_ID_BY_WEAPON_TYPE[player.selectedGunType]
+          ) {
+            // Highlight the selected weapon in the inventory
+            ctx.strokeStyle = "yellow";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(
+              config.SCREEN_WIDTH / 2 - width / 2 + itemX - texture.width / 2,
+              config.SCREEN_HEIGHT - height - 50 + itemY - texture.height / 2,
+              texture.width,
+              texture.height
+            );
+          }
+        });
       }
     }
 
@@ -693,10 +695,8 @@ export class World implements IWorld {
     }
 
     for (const updatedEnemy of Object.values(changeset.updatedEnemies)) {
-      const enemy = this._enemies.find((e) => e.id === updatedEnemy.id);
-      if (enemy) {
-        enemy.applyFromGameState(updatedEnemy);
-      } else {
+      let enemy = this._enemies.find((e) => e.id === updatedEnemy.id);
+      if (!enemy) {
         const wall = this._walls.find(
           (wall) => wall.id === updatedEnemy.wallId
         );
@@ -707,8 +707,10 @@ export class World implements IWorld {
           continue;
         }
 
-        this._enemies.push(new this._Enemy(this, wall!, [], updatedEnemy.id));
+        enemy = new this._Enemy(this, wall!, [], updatedEnemy.id);
+        this._enemies.push(enemy);
       }
+      enemy.applyFromGameState(updatedEnemy);
     }
 
     for (const removedEnemyId of changeset.removedEnemies) {
@@ -718,8 +720,12 @@ export class World implements IWorld {
     for (const updatedBonus of Object.values(changeset.updatedBonuses)) {
       if (updatedBonus.pickedUpBy) {
         this._bonuses = this._bonuses.filter((b) => b.id !== updatedBonus.id);
-        if (updatedBonus.pickedUpBy === this._player?.id) {
+        if (
+          updatedBonus.pickedUpBy === this._player?.id &&
+          !this._bonusPickupCache.has(updatedBonus.id)
+        ) {
           AudioManager.getInstance().playSound(config.SOUNDS.BONUS_PICKUP);
+          this._bonusPickupCache.add(updatedBonus.id);
         }
 
         continue;
@@ -751,45 +757,43 @@ export class World implements IWorld {
       if (
         bulletData.ownerId === this._player?.id &&
         hadNoBullets &&
-        this._player.bulletsLeft === 0
+        this._player.bulletsLeft === 0 &&
+        !this._bulletManager.hasSoundPlayedForBullet(bulletData) &&
+        !config.WEAPON_TYPES_FROM_INVENTORY.includes(
+          bulletData.weaponType as config.WeaponType
+        )
       ) {
         // Player has just recharged their bullets
         AudioManager.getInstance().playSound(
           config.SOUNDS.PLAYER_BULLET_RECHARGE,
-          0.5
+          { volume: 0.5 }
         );
       }
 
-      this._bulletManager.registerShot(
-        new this._Bullet(
-          this,
-          new Point2D(bulletData.position!.x, bulletData.position!.y),
-          0,
-          bulletData.isEnemy,
-          bulletData.ownerId,
-          bulletData.id
-        )
-      );
+      this._bulletManager.applyFromGameState(bulletData);
     }
 
     for (const bulletData of Object.values(changeset.removedBullets)) {
-      if (!this._bulletManager.getBulletById(bulletData.id)) {
-        AudioManager.getInstance().playSound(config.SOUNDS.BULLET);
+      const bullet = this._bulletManager.getBulletById(bulletData.id);
+      if (!bullet) {
         if (
           bulletData.ownerId === this._player?.id &&
           hadNoBullets &&
-          this._player.bulletsLeft === 0
+          this._player.bulletsLeft === 0 &&
+          !this._bulletManager.hasSoundPlayedForBullet(bulletData) &&
+          !config.WEAPON_TYPES_FROM_INVENTORY.includes(
+            bulletData.weaponType as config.WeaponType
+          )
         ) {
           // Player has just recharged their bullets
           AudioManager.getInstance().playSound(
             config.SOUNDS.PLAYER_BULLET_RECHARGE,
-            0.5
+            { volume: 0.5 }
           );
         }
-        continue;
       }
 
-      this._bulletManager.unregisterShot(bulletData.id);
+      this._bulletManager.applyFromGameState(bulletData, true);
     }
   }
 }

@@ -1,8 +1,11 @@
-import { Game } from "../../utils/Game";
+import { WeaponType } from "../../config";
 import { IPoint } from "../geometry/IPoint";
 import { IWorld } from "../IWorld";
 import { SessionPlayer } from "../session";
-import { Player as PlayerMessage } from "../socketEvents";
+import {
+  InventoryItem as InventoryItemMessage,
+  Player as PlayerMessage,
+} from "../socketEvents";
 import { IDamageable } from "./IDamageable";
 import { IDrawable } from "./IDrawable";
 import { IKillable } from "./IKillable";
@@ -23,6 +26,8 @@ export interface IPlayer
   money: number;
   kills: number;
   bulletsLeft: number;
+  selectedGunType: WeaponType;
+  inventory: InventoryItemMessage[];
   applyFromGameState(changeset: PlayerMessage): void;
 }
 

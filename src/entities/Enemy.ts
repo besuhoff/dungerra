@@ -86,7 +86,6 @@ export class Enemy extends ScreenObject implements IEnemy {
 
     // Load sounds
     const audioManager = AudioManager.getInstance();
-    audioManager.loadSound(config.SOUNDS.BULLET);
     audioManager.loadSound(config.SOUNDS.ENEMY_HURT);
 
     // Load enemy sprite
@@ -100,46 +99,6 @@ export class Enemy extends ScreenObject implements IEnemy {
     });
   }
 
-  canSeePlayer(): boolean {
-    const player = this.world.player;
-    if (this.world.gameOver || !player) {
-      return false;
-    }
-
-    // Check if player is in line of sight
-    const dx = player.x - this.x;
-    const dy = player.y - this.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-
-    if (player.hasNightVision() && distance > this.nightVisionDetectionRadius) {
-      return false;
-    }
-
-    if (distance > this.world.torchRadius) {
-      return false;
-    }
-
-    // Check if any nearby walls block the line of sight
-    for (const wall of this.world.walls) {
-      const wallPoint = wall.getLeftTopCorner();
-      if (
-        lineIntersectsRect(
-          this.x,
-          this.y,
-          player.x,
-          player.y,
-          wallPoint.x,
-          wallPoint.y,
-          wall.width,
-          wall.height
-        )
-      ) {
-        return false;
-      }
-    }
-    return true;
-  }
-
   get rotation(): number {
     return this._rotation;
   }
@@ -150,32 +109,6 @@ export class Enemy extends ScreenObject implements IEnemy {
       .movedByPointCoordinates(config.ENEMY_TEXTURE_CENTER.inverted())
       .moveByPointCoordinates(config.ENEMY_GUN_END)
       .rotateAroundPointCoordinates(this.getPosition(), this.rotation);
-  }
-
-  shoot(dt: number): void {
-    if (this.shootDelay > 0) {
-      this.shootDelay = Math.max(0, this.shootDelay - dt);
-      return;
-    }
-
-    const bulletPoint = this.getGunPoint();
-
-    // Create bullet
-    const bullet = new Bullet(this.world, bulletPoint, this.rotation, true);
-
-    this._bullets.push(bullet);
-    // Play hurt sound with volume based on distance to player
-    const player = this.world.player;
-    if (!player) {
-      return;
-    }
-
-    const distance = Math.sqrt(
-      (this.x - player.x) ** 2 + (this.y - player.y) ** 2
-    );
-    const volume = Math.max(1 - (0.5 * distance) / config.TORCH_RADIUS, 0);
-    AudioManager.getInstance().playSound(config.SOUNDS.BULLET, volume);
-    this.shootDelay = config.ENEMY_SHOOT_DELAY;
   }
 
   draw(ctx: CanvasRenderingContext2D, uiCtx: CanvasRenderingContext2D): void {

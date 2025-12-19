@@ -8,7 +8,6 @@ import { IPlayer } from "./IPlayer";
 import { Enemy as EnemyMessage } from "../../types/socketEvents";
 
 export interface IEnemy extends IScreenObject, IDrawable {
-  canSeePlayer(player: IPlayer): boolean;
   applyFromGameState(enemy: EnemyMessage): void;
   rotation: number;
   wall: IWall;

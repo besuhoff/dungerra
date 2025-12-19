@@ -1,3 +1,9 @@
+export type PlaySoundOptions = {
+  volume?: number;
+  loop?: boolean;
+  offset?: number;
+};
+
 export class AudioManager {
   private static instance: AudioManager;
   private audioContext: AudioContext;
@@ -37,11 +43,7 @@ export class AudioManager {
     await loadingPromise;
   }
 
-  playSound(
-    soundPath: string,
-    volume: number = 1,
-    loop: boolean = false
-  ): void {
+  playSound(soundPath: string, options?: PlaySoundOptions): void {
     const buffer = this.soundBuffers.get(soundPath);
     if (!buffer) {
       console.warn(`Sound not loaded: ${soundPath}`);
@@ -50,10 +52,10 @@ export class AudioManager {
 
     const source = this.audioContext.createBufferSource();
     source.buffer = buffer;
-    source.loop = loop;
+    source.loop = options?.loop ?? false;
 
     const gainNode = this.audioContext.createGain();
-    gainNode.gain.value = volume;
+    gainNode.gain.value = options?.volume ?? 1;
 
     source.connect(gainNode);
     gainNode.connect(this.audioContext.destination);
@@ -72,7 +74,7 @@ export class AudioManager {
       }
     };
 
-    source.start();
+    source.start(0, options?.offset ?? 0);
   }
 
   stopSound(soundPath: string): void {

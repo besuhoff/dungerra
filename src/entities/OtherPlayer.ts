@@ -10,7 +10,12 @@ import { Point2D } from "../utils/geometry/Point2D";
 import { Player as PlayerMessage } from "../types/socketEvents";
 
 export class OtherPlayer extends ScreenObject implements IOtherPlayer {
-  private _image: HTMLImageElement | null = null;
+  private _images: Record<config.WeaponType, HTMLImageElement | null> = {
+    blaster: null,
+    shotgun: null,
+    railgun: null,
+    rocket_launcher: null,
+  };
   private _bloodImage: HTMLImageElement | null = null;
 
   private _rotation: number = 0;
@@ -19,6 +24,7 @@ export class OtherPlayer extends ScreenObject implements IOtherPlayer {
   private _invulnerableTimer: number = 0;
   private _lives: number = config.PLAYER_LIVES;
   private _nightVisionTimer: number = 0;
+  private _weaponType: config.WeaponType = "blaster";
 
   private dead: boolean = false;
 
@@ -45,16 +51,21 @@ export class OtherPlayer extends ScreenObject implements IOtherPlayer {
 
     this._rotation = rotation;
 
-    // Load sounds
-    const audioManager = AudioManager.getInstance();
-    audioManager.loadSound(config.SOUNDS.BULLET);
-    audioManager.loadSound(config.SOUNDS.PLAYER_HURT);
-    audioManager.loadSound(config.SOUNDS.PLAYER_BULLET_RECHARGE);
-
     // Load player sprite
-    loadImage(config.TEXTURES.PLAYER).then((img) => {
-      this._image = img;
+    loadImage(config.PLAYER_TEXTURE_BY_WEAPON_TYPE.blaster).then((img) => {
+      this._images.blaster = img;
     });
+    loadImage(config.PLAYER_TEXTURE_BY_WEAPON_TYPE.shotgun).then((img) => {
+      this._images.shotgun = img;
+    });
+    loadImage(config.PLAYER_TEXTURE_BY_WEAPON_TYPE.railgun).then((img) => {
+      this._images.railgun = img;
+    });
+    loadImage(config.PLAYER_TEXTURE_BY_WEAPON_TYPE.rocket_launcher).then(
+      (img) => {
+        this._images.rocket_launcher = img;
+      }
+    );
 
     // Load blood texture
     loadImage(config.TEXTURES.BLOOD).then((img) => {
@@ -90,7 +101,11 @@ export class OtherPlayer extends ScreenObject implements IOtherPlayer {
       bullet.draw(ctx, uiCtx);
     });
 
-    if (!this._image || !this.world.player || this.world.gameOver) {
+    if (
+      !this._images[this._weaponType] ||
+      !this.world.player ||
+      this.world.gameOver
+    ) {
       return;
     }
 
@@ -144,9 +159,9 @@ export class OtherPlayer extends ScreenObject implements IOtherPlayer {
         );
       }
 
-      if (!this.dead && this._image) {
+      if (!this.dead && this._images[this._weaponType]) {
         ctx.drawImage(
-          this._image,
+          this._images[this._weaponType]!,
           texturePoint.x,
           texturePoint.y,
           textureSize,
@@ -260,5 +275,6 @@ export class OtherPlayer extends ScreenObject implements IOtherPlayer {
     this.dead = !player.isAlive;
     this._invulnerableTimer = player.invulnerableTimer;
     this._nightVisionTimer = player.nightVisionTimer;
+    this._weaponType = player.selectedGunType as config.WeaponType;
   }
 }
