@@ -8,6 +8,7 @@ import { Bullet as BulletMessage } from "../socketEvents";
 import * as config from "../../config";
 export interface IBullet extends IScreenObject, IDrawable {
   active: boolean;
+  inactiveMs: number;
   velocity: Vector2D;
   isEnemy: boolean;
   ownerId?: string;

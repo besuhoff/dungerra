@@ -310,7 +310,7 @@ export class Player extends ScreenObject implements IPlayer {
     ) {
       AudioManager.getInstance().playSound(
         config.SOUNDS.PLAYER_BULLET_RECHARGE,
-        0.5
+        { volume: 0.5 }
       );
     }
 

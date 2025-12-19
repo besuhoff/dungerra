@@ -218,3 +218,10 @@ export const PLAYER_TEXTURE_BY_WEAPON_TYPE: Record<WeaponType, string> = {
   railgun: TEXTURES.PLAYER_RAILGUN,
   rocket_launcher: TEXTURES.PLAYER_ROCKET_LAUNCHER,
 };
+
+export const BULLET_AFTERLIFE_MS_BY_WEAPON_TYPE: Record<WeaponType, number> = {
+  blaster: 0,
+  shotgun: 0,
+  railgun: 200,
+  rocket_launcher: ANIMATIONS.EXPLOSION.duration,
+};

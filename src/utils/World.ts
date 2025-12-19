@@ -136,7 +136,7 @@ export class World implements IWorld {
     const audioManager = AudioManager.getInstance();
     audioManager.loadSound(config.SOUNDS.TORCH).then(() => {
       // Start playing torch sound in a loop
-      audioManager.playSound(config.SOUNDS.TORCH, 1, true);
+      audioManager.playSound(config.SOUNDS.TORCH, { volume: 1, loop: true });
     });
 
     // Load floor texture
@@ -439,11 +439,13 @@ export class World implements IWorld {
 
       const symbol = config.BULLET_SYMBOL[this._player.selectedGunType];
       const bulletsLeft = this._player.bulletsLeft;
-      ctx.fillText(
-        `Bullets: ${bulletsLeft < 6 ? Array(bulletsLeft).fill(symbol).join("") : `${symbol} x ${bulletsLeft}`}`,
-        10,
-        90
-      );
+      const bulletsDisplay =
+        bulletsLeft === 0
+          ? "-"
+          : bulletsLeft < 6
+            ? Array(bulletsLeft).fill(symbol).join("")
+            : `${symbol} x ${bulletsLeft}`;
+      ctx.fillText(`Bullets: ${bulletsDisplay}`, 10, 90);
       if (this._player.hasNightVision()) {
         ctx.fillStyle = "#90ff90";
         ctx.fillText(
@@ -756,7 +758,7 @@ export class World implements IWorld {
         bulletData.ownerId === this._player?.id &&
         hadNoBullets &&
         this._player.bulletsLeft === 0 &&
-        !this._bulletManager.hasSoundPlayedForBullet(bulletData.id) &&
+        !this._bulletManager.hasSoundPlayedForBullet(bulletData) &&
         !config.WEAPON_TYPES_FROM_INVENTORY.includes(
           bulletData.weaponType as config.WeaponType
         )
@@ -764,13 +766,11 @@ export class World implements IWorld {
         // Player has just recharged their bullets
         AudioManager.getInstance().playSound(
           config.SOUNDS.PLAYER_BULLET_RECHARGE,
-          0.5
+          { volume: 0.5 }
         );
       }
 
-      this._bulletManager.registerShot(
-        this._Bullet.fromGameState(this, bulletData)
-      );
+      this._bulletManager.applyFromGameState(bulletData);
     }
 
     for (const bulletData of Object.values(changeset.removedBullets)) {
@@ -780,7 +780,7 @@ export class World implements IWorld {
           bulletData.ownerId === this._player?.id &&
           hadNoBullets &&
           this._player.bulletsLeft === 0 &&
-          !this._bulletManager.hasSoundPlayedForBullet(bulletData.id) &&
+          !this._bulletManager.hasSoundPlayedForBullet(bulletData) &&
           !config.WEAPON_TYPES_FROM_INVENTORY.includes(
             bulletData.weaponType as config.WeaponType
           )
@@ -788,15 +788,12 @@ export class World implements IWorld {
           // Player has just recharged their bullets
           AudioManager.getInstance().playSound(
             config.SOUNDS.PLAYER_BULLET_RECHARGE,
-            0.5
+            { volume: 0.5 }
           );
         }
-        this._bulletManager.registerShot(
-          this._Bullet.fromGameState(this, bulletData)
-        );
       }
 
-      this._bulletManager.unregisterShot(bulletData.id, !bulletData.isActive);
+      this._bulletManager.applyFromGameState(bulletData, true);
     }
   }
 }

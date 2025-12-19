@@ -1,7 +1,7 @@
 {
   "name": "dungeon-game-ts",
   "version": "1.0.0",
-  "description": "TypeScript port of the Dungeon Game",
+  "description": "Dungerra, a multiplayer dungeon exploration game.",
   "main": "dist/main.js",
   "scripts": {
     "start": "webpack serve --mode development",
