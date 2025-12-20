@@ -17,7 +17,7 @@ function getElement<T extends HTMLElement>(elementId: string): T | null {
 
 function getSessionIdFromUrl(): string | null {
   const path = window.location.pathname;
-  const match = path.match(/^\/([a-f0-9-]+)$/i);
+  const match = path.match(/\/([a-f0-9-]+)$/i);
   return match ? match[1] : null;
 }
 
