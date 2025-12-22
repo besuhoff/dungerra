@@ -240,6 +240,32 @@ export class World implements IWorld {
         }
       }
     }
+
+    // Draw neighboring chunk boundaries for debugging
+    if (this.debug) {
+      const chunkLeftTop = this.getChunkLeftTop(this.cameraPoint);
+
+      ctx.strokeStyle = "yellow";
+      ctx.lineWidth = 1;
+
+      for (let y = -1; y <= 1; y++) {
+        for (let x = -1; x <= 1; x++) {
+          const chunkX = (chunkLeftTop.x + x) * this.CHUNK_SIZE;
+          const chunkY = (chunkLeftTop.y + y) * this.CHUNK_SIZE;
+
+          const screenPoint = this.worldToScreenCoordinates(
+            new Point2D(chunkX, chunkY)
+          );
+
+          ctx.strokeRect(
+            screenPoint.x,
+            screenPoint.y,
+            this.CHUNK_SIZE,
+            this.CHUNK_SIZE
+          );
+        }
+      }
+    }
   }
 
   draw(
@@ -533,6 +559,13 @@ export class World implements IWorld {
     this._player.drawUI(ctx);
 
     if (this.debug) {
+      const worldObjectsCount =
+        this._enemies.length +
+        this._walls.length +
+        this._bonuses.length +
+        Object.values(this._otherPlayers).length +
+        (this._player ? 1 : 0);
+
       ctx.fillStyle = "white";
       ctx.font = `12px ${config.FONT_NAME}`;
       ctx.fillText(
@@ -541,7 +574,7 @@ export class World implements IWorld {
         config.SCREEN_HEIGHT - 52
       );
       ctx.fillText(
-        `Number of world objects: ${ScreenObject.objectCount}`,
+        `Number of world objects: ${worldObjectsCount}`,
         10,
         config.SCREEN_HEIGHT - 66
       );
