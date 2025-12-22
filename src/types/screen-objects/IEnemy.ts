@@ -14,10 +14,5 @@ export interface IEnemy extends IScreenObject, IDrawable {
 }
 
 export interface IEnemyFactory {
-  new (
-    world: IWorld,
-    wall: IWall,
-    neighboringWalls: IWall[],
-    id?: string
-  ): IEnemy;
+  new (world: IWorld, wall: IWall, enemyData: EnemyMessage): IEnemy;
 }

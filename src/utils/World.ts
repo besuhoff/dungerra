@@ -643,8 +643,7 @@ export class World implements IWorld {
           new this._Enemy(
             this,
             this._walls.find((wall) => wall.id === enemyData.wallId)!,
-            [],
-            enemyData.id
+            enemyData
           )
         );
       }
@@ -732,10 +731,11 @@ export class World implements IWorld {
           continue;
         }
 
-        enemy = new this._Enemy(this, wall!, [], updatedEnemy.id);
+        enemy = new this._Enemy(this, wall!, updatedEnemy);
         this._enemies.push(enemy);
+      } else {
+        enemy.applyFromGameState(updatedEnemy);
       }
-      enemy.applyFromGameState(updatedEnemy);
     }
 
     for (const removedEnemyId of changeset.removedEnemies) {
