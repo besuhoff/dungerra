@@ -31,51 +31,17 @@ export class Enemy extends ScreenObject implements IEnemy {
   constructor(
     private world: IWorld,
     private _wall: IWall,
-    neighboringWalls: IWall[],
-    id?: string
+    enemyData: EnemyMessage
   ) {
     const size = config.ENEMY_SIZE;
     const wallSide = Math.random() < 0.5 ? 1 : -1;
 
-    let x: number, y: number;
+    const position = enemyData.position ?? { x: 0, y: 0 };
 
-    if (_wall.orientation === "vertical") {
-      x = _wall.x - wallSide * (_wall.width / 2 + size / 2);
-      y = _wall.y + Math.random() * _wall.height;
-      let dy = size;
-      let direction = 1;
-      // Check if there is a wall in the way
-      while (
-        y >= _wall.y + size &&
-        y < _wall.y + _wall.height &&
-        neighboringWalls.some((wall) =>
-          wall.checkCollision(x - size / 2, y - size / 2, size, size)
-        )
-      ) {
-        y += direction * dy;
-        dy += size;
-        direction *= -1;
-      }
-    } else {
-      x = _wall.x + Math.random() * _wall.width;
-      y = _wall.y - wallSide * (_wall.height / 2 + size / 2);
-      let dx = size;
-      let direction = 1;
-      // Check if there is a wall in the way
-      while (
-        x >= _wall.x + size &&
-        x < _wall.x + _wall.width &&
-        neighboringWalls.some((wall) =>
-          wall.checkCollision(x - size / 2, y - size / 2, size, size)
-        )
-      ) {
-        x += direction * dx;
-        dx += size;
-        direction *= -1;
-      }
-    }
-
-    super(new Point2D(x, y), size, size, id);
+    super(new Point2D(position.x, position.y), size, size, enemyData.id);
+    this._rotation = enemyData.rotation;
+    this._lives = enemyData.lives;
+    this.dead = enemyData.isDead;
 
     // Load enemy sprite
     loadImage(config.TEXTURES.ENEMY).then((img) => {
