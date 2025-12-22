@@ -13,16 +13,9 @@ import { Bullet } from "./Bullet";
 import { Enemy as EnemyMessage } from "../types/socketEvents";
 
 export class Enemy extends ScreenObject implements IEnemy {
-  private speed: number = config.ENEMY_SPEED;
   private image: HTMLImageElement | null = null;
   private bloodImage: HTMLImageElement | null = null;
-  private direction: number = 1;
-  private nightVisionDetectionRadius: number =
-    config.NIGHT_VISION_DETECTION_RADIUS;
   private dead: boolean = false;
-  private deadTimer: number = 0;
-  private shootDelay: number = 0;
-  private reward: number = config.ENEMY_REWARD;
   private _lives = config.ENEMY_LIVES;
   private _bullets: IBullet[] = [];
   private _rotation: number = 0;
@@ -83,10 +76,6 @@ export class Enemy extends ScreenObject implements IEnemy {
     }
 
     super(new Point2D(x, y), size, size, id);
-
-    // Load sounds
-    const audioManager = AudioManager.getInstance();
-    audioManager.loadSound(config.SOUNDS.ENEMY_HURT);
 
     // Load enemy sprite
     loadImage(config.TEXTURES.ENEMY).then((img) => {
@@ -223,6 +212,18 @@ export class Enemy extends ScreenObject implements IEnemy {
   applyFromGameState(enemy: EnemyMessage): void {
     this._point.setTo(enemy.position!.x, enemy.position!.y);
     this._rotation = enemy.rotation;
+
+    if (enemy.lives < this._lives) {
+      const distance = this.getPosition().distanceTo(
+        this.world.player!.getPosition()
+      );
+      const maxDistance = this.world.torchRadius * 2;
+      const volume = distance >= maxDistance ? 0 : 1 - distance / maxDistance;
+
+      const audioManager = AudioManager.getInstance();
+      audioManager.playSound(config.SOUNDS.ENEMY_HURT, { volume });
+    }
+
     this._lives = enemy.lives;
     this.dead = enemy.isDead;
   }
