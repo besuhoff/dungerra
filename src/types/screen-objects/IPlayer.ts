@@ -1,4 +1,4 @@
-import { WeaponType } from "../../config";
+import { WeaponType, InventoryItemID } from "../../config";
 import { IPoint } from "../geometry/IPoint";
 import { IWorld } from "../IWorld";
 import { SessionPlayer } from "../session";
@@ -28,6 +28,7 @@ export interface IPlayer
   bulletsLeft: number;
   selectedGunType: WeaponType;
   inventory: InventoryItemMessage[];
+  hasInventoryItem(itemType: InventoryItemID): boolean;
   applyFromGameState(changeset: PlayerMessage): void;
 }
 

@@ -8,7 +8,7 @@ import { loadImage } from "./loadImage";
 import { World } from "./World";
 import { SessionManager } from "../api/SessionManager";
 import { AuthManager } from "../api/AuthManager";
-import { Bullet } from "../entities/Bullet";
+import { Shop } from "../entities/Shop";
 import { Session } from "../types/session";
 import { OtherPlayer } from "../entities/OtherPlayer";
 import { BulletManager } from "./BulletManager";
@@ -76,6 +76,9 @@ export class Game {
     audioManager.loadSound(config.SOUNDS.ROCKET_LAUNCHER);
     audioManager.loadSound(config.SOUNDS.ROCKET_BLAST);
     audioManager.loadSound(config.SOUNDS.SPAWN);
+    audioManager.loadSound(config.SOUNDS.ENTER_SHOP);
+    audioManager.loadSound(config.SOUNDS.MONEY_SPENT);
+    audioManager.loadSound(config.SOUNDS.MISTAKE);
     loadImage(config.TEXTURES.BLOOD);
     loadImage(config.TEXTURES.AID_KIT);
     loadImage(config.TEXTURES.GOGGLES);
@@ -130,6 +133,12 @@ export class Game {
     if (e.code === "KeyE" || e.code === "Backquote") {
       this._world?.toggleInventory();
     }
+    if (e.code === "Enter") {
+      this._world?.openShopModal();
+    }
+    if (e.code === "Escape") {
+      this._world?.closeShopModal();
+    }
   }
 
   private handleMouseMove(e: MouseEvent): void {
@@ -162,7 +171,7 @@ export class Game {
         Wall,
         Bonus,
         OtherPlayer,
-        Bullet,
+        Shop,
         BulletManager,
         multiplayerMode
       );

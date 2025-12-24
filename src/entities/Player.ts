@@ -70,6 +70,12 @@ export class Player extends ScreenObject implements IPlayer {
     return this._inventory;
   }
 
+  hasInventoryItem(itemType: config.InventoryItemID): boolean {
+    return this._inventory.some(
+      (item) => item.type === itemType && item.quantity > 0
+    );
+  }
+
   static createFromSessionPlayer(
     world: IWorld,
     sessionPlayer: SessionPlayer
@@ -302,7 +308,7 @@ export class Player extends ScreenObject implements IPlayer {
 
     if (
       changeset.selectedGunType === this._selectedGunType &&
-      !config.WEAPON_TYPES_FROM_INVENTORY.includes(
+      !config.WEAPON_TYPES_LOADED_DIRECTLY_FROM_INVENTORY.includes(
         changeset.selectedGunType as config.WeaponType
       ) &&
       this._bulletsLeft <
@@ -315,7 +321,7 @@ export class Player extends ScreenObject implements IPlayer {
     }
 
     if (
-      config.WEAPON_TYPES_FROM_INVENTORY.includes(
+      config.WEAPON_TYPES_LOADED_DIRECTLY_FROM_INVENTORY.includes(
         changeset.selectedGunType as config.WeaponType
       )
     ) {
@@ -336,18 +342,26 @@ export class Player extends ScreenObject implements IPlayer {
     this._invulnerableTimer = changeset.invulnerableTimer;
     this._nightVisionTimer = changeset.nightVisionTimer;
 
-    this._inventory.forEach((item) => {
-      const updatedItem = changeset.inventory.find(
-        (newItem) => newItem.type === item.type
-      );
-      if (
-        config.INVENTORY_ITEM_BONUS.includes(item.type) &&
-        updatedItem &&
-        updatedItem?.quantity != item.quantity
-      ) {
-        AudioManager.getInstance().playSound(config.SOUNDS.BONUS_PICKUP);
-      }
-    });
+    if (this.world.isPlayerInShop()) {
+      changeset.inventory.forEach((item) => {
+        const existingItem = this._inventory.find(
+          (invItem) => invItem.type === item.type
+        );
+
+        if (!existingItem || item.quantity > existingItem.quantity) {
+          AudioManager.getInstance().playSound(config.SOUNDS.MONEY_SPENT);
+        }
+      });
+    } else {
+      this._inventory.filter(item => config.INVENTORY_ITEM_BONUS.includes(item.type)).forEach((item) => {
+        const updatedItem = changeset.inventory.find(
+          (newItem) => newItem.type === item.type
+        );
+        if (!updatedItem || updatedItem.quantity < item.quantity) {
+            AudioManager.getInstance().playSound(config.SOUNDS.BONUS_PICKUP);
+        }
+      });
+    }
 
     this._inventory = changeset.inventory;
   }

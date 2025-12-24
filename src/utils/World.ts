@@ -1,5 +1,4 @@
 import * as config from "../config";
-import { ScreenObject } from "../entities/ScreenObject";
 import { IEnemy, IEnemyFactory } from "../types/screen-objects/IEnemy";
 import { IPlayerFactory } from "../types/screen-objects/IPlayer";
 import { IPlayer } from "../types/screen-objects/IPlayer";
@@ -15,7 +14,7 @@ import { loadImage } from "./loadImage";
 import { Point2D } from "./geometry/Point2D";
 import { AudioManager } from "./AudioManager";
 import { SessionManager } from "../api/SessionManager";
-import { InventoryItem, Player as PlayerMessage } from "../types/socketEvents";
+import { Player as PlayerMessage } from "../types/socketEvents";
 import {
   IOtherPlayer,
   IOtherPlayerFactory,
@@ -31,6 +30,7 @@ import {
 } from "../types/screen-objects/IBulletManager";
 import { IBulletFactory } from "../types/screen-objects/IBullet";
 import { SessionPlayer } from "../types/session";
+import { IShop, IShopFactory } from "../types/screen-objects/IShop";
 
 export class World implements IWorld {
   private readonly CHUNK_SIZE = 2000; // Same as screen width for now
@@ -40,6 +40,7 @@ export class World implements IWorld {
   private _enemies: IEnemy[] = [];
   private _walls: IWall[] = [];
   private _bonuses: IBonus[] = [];
+  private _shops: IShop[] = [];
 
   private _gameOver: boolean = false;
   private _inventoryOpen: boolean = true;
@@ -67,6 +68,7 @@ export class World implements IWorld {
     right: false,
     shoot: false,
     itemKey: {},
+    purchaseItemKey: {},
   };
   private _inputStateSubmitTimestamp: number = 0;
 
@@ -106,6 +108,10 @@ export class World implements IWorld {
     return this._bonuses;
   }
 
+  get shops(): IShop[] {
+    return this._shops;
+  }
+
   get cameraPoint(): IPoint {
     return this._cameraPoint;
   }
@@ -124,7 +130,7 @@ export class World implements IWorld {
     private _Wall: IWallFactory,
     private _Bonus: IBonusFactory,
     private _OtherPlayer: IOtherPlayerFactory,
-    private _Bullet: IBulletFactory,
+    private _Shop: IShopFactory,
     private _BulletManager: IBulletManagerFactory,
     private _multiplayerMode: "host" | "guest"
   ) {
@@ -263,6 +269,18 @@ export class World implements IWorld {
             this.CHUNK_SIZE,
             this.CHUNK_SIZE
           );
+
+          // Draw diagonals
+          ctx.beginPath();
+          ctx.moveTo(screenPoint.x, screenPoint.y);
+          ctx.lineTo(
+            screenPoint.x + this.CHUNK_SIZE,
+            screenPoint.y + this.CHUNK_SIZE
+          );
+          ctx.moveTo(screenPoint.x + this.CHUNK_SIZE, screenPoint.y);
+          ctx.lineTo(screenPoint.x, screenPoint.y + this.CHUNK_SIZE);
+          ctx.closePath();
+          ctx.stroke();
         }
       }
     }
@@ -277,6 +295,9 @@ export class World implements IWorld {
     ctx.clearRect(0, 0, config.SCREEN_WIDTH, config.SCREEN_HEIGHT);
 
     this.drawFloor(ctx);
+
+    // Draw shops
+    this._shops.forEach((shop) => shop.draw(ctx, uiCtx));
 
     // Draw walls
     this._walls.forEach((wall) => wall.draw(ctx, uiCtx));
@@ -374,9 +395,43 @@ export class World implements IWorld {
     const now = Date.now();
 
     const itemKey: { [key: number]: boolean } = {};
-    for (let i = 1; i <= 9; i++) {
+    const purchaseItemKey: { [key: number]: boolean } = {};
+    for (let i = 0; i <= 9; i++) {
       if (keys.has(`Digit${i}`)) {
-        itemKey[i] = true;
+        const playerShop = this.shops.find(
+          (shop) => shop.hasPlayer() && shop.isModalOpen
+        );
+
+        if (playerShop) {
+          const inventory = playerShop.inventory;
+          const key =
+            Number(
+              Object.keys(inventory).filter(
+                (key) => inventory[Number(key)].quantity > 0
+              )[i == 0 ? 9 : i - 1]
+            ) ?? null;
+
+          purchaseItemKey[key] = true;
+        } else {
+          itemKey[i] = true;
+        }
+      }
+    }
+
+    if (this._previousInputState) {
+      for (const key of Object.keys(this._previousInputState.purchaseItemKey)) {
+        if (!purchaseItemKey[Number(key)]) {
+          const itemId = Number(key) as config.InventoryItemID;
+
+          if (
+            Object.values(config.WEAPON_INVENTORY_ID_BY_WEAPON_TYPE).includes(
+              itemId
+            ) &&
+            this._player.hasInventoryItem(itemId)
+          ) {
+            AudioManager.getInstance().playSound(config.SOUNDS.MISTAKE);
+          }
+        }
       }
     }
 
@@ -388,6 +443,8 @@ export class World implements IWorld {
       shoot !== this._previousInputState.shoot ||
       JSON.stringify(itemKey) !==
         JSON.stringify(this._previousInputState.itemKey) ||
+      JSON.stringify(purchaseItemKey) !==
+        JSON.stringify(this._previousInputState.purchaseItemKey) ||
       now - this._inputStateSubmitTimestamp > 1000
     ) {
       this._sessionManager.notifyInput({
@@ -397,6 +454,7 @@ export class World implements IWorld {
         right,
         shoot,
         itemKey,
+        purchaseItemKey,
       });
       this._previousInputState = {
         forward,
@@ -405,6 +463,7 @@ export class World implements IWorld {
         right,
         shoot,
         itemKey,
+        purchaseItemKey,
       };
       this._inputStateSubmitTimestamp = now;
     }
@@ -491,11 +550,9 @@ export class World implements IWorld {
 
       if (player.inventory) {
         player.inventory.forEach((item) => {
-          const isAmmo = config.AMMO_ITEM_IDS.includes(
-            item.type as config.InventoryItemID
-          );
-          const itemX = (isAmmo ? item.type - 20 : item.type) * 41 - 18;
-          const itemY = isAmmo ? 22 : 64;
+          if (!item.quantity) {
+            return;
+          }
 
           const texture =
             this.inventoryItemTextures[item.type as config.InventoryItemID];
@@ -503,6 +560,12 @@ export class World implements IWorld {
           if (!texture) {
             return;
           }
+
+          const isAmmo = config.AMMO_ITEM_IDS.includes(
+            item.type as config.InventoryItemID
+          );
+          const itemX = (isAmmo ? item.type - 20 : item.type) * 41 - 18;
+          const itemY = isAmmo ? 22 : 64;
 
           ctx.drawImage(
             texture,
@@ -558,11 +621,14 @@ export class World implements IWorld {
 
     this._player.drawUI(ctx);
 
+    this._shops.forEach((shop) => shop.drawUI(ctx));
+
     if (this.debug) {
       const worldObjectsCount =
         this._enemies.length +
         this._walls.length +
         this._bonuses.length +
+        this._shops.length +
         Object.values(this._otherPlayers).length +
         (this._player ? 1 : 0);
 
@@ -604,6 +670,10 @@ export class World implements IWorld {
         config.SCREEN_HEIGHT - 136
       );
     }
+  }
+
+  getInventoryTexture(type: config.InventoryItemID): HTMLImageElement | null {
+    return this.inventoryItemTextures[type] || null;
   }
 
   applyGameState(state: GameStateMessage): void {
@@ -660,6 +730,20 @@ export class World implements IWorld {
             bonusData.id
           )
         );
+      }
+    }
+
+    for (const shopData of Object.values(state.shops)) {
+      const shop = this._shops.find((s) => s.id === shopData.id);
+      if (!shop) {
+        this._shops.push(new this._Shop(this, shopData));
+      }
+    }
+
+    for (const shopId of state.playersShops) {
+      const shop = this._shops.find((s) => s.id === shopId);
+      if (shop) {
+        shop.handlePlayerEnter();
       }
     }
   }
@@ -784,7 +868,7 @@ export class World implements IWorld {
         hadNoBullets &&
         this._player.bulletsLeft === 0 &&
         !this._bulletManager.hasSoundPlayedForBullet(bulletData) &&
-        !config.WEAPON_TYPES_FROM_INVENTORY.includes(
+        !config.WEAPON_TYPES_LOADED_DIRECTLY_FROM_INVENTORY.includes(
           bulletData.weaponType as config.WeaponType
         )
       ) {
@@ -806,7 +890,7 @@ export class World implements IWorld {
           hadNoBullets &&
           this._player.bulletsLeft === 0 &&
           !this._bulletManager.hasSoundPlayedForBullet(bulletData) &&
-          !config.WEAPON_TYPES_FROM_INVENTORY.includes(
+          !config.WEAPON_TYPES_LOADED_DIRECTLY_FROM_INVENTORY.includes(
             bulletData.weaponType as config.WeaponType
           )
         ) {
@@ -820,9 +904,50 @@ export class World implements IWorld {
 
       this._bulletManager.applyFromGameState(bulletData, true);
     }
+
+    for (const shopData of Object.values(changeset.updatedShops)) {
+      const shop = this._shops.find((s) => s.id === shopData.id);
+      if (!shop) {
+        this._shops.push(new this._Shop(this, shopData));
+      } else {
+        shop.applyFromGameState(shopData);
+      }
+    }
+
+    for (const removedShopId of changeset.removedShops) {
+      this._shops = this._shops.filter((s) => s.id !== removedShopId);
+    }
+
+    for (const shop of Object.values(this._shops)) {
+      if (changeset.playersShops.includes(shop.id)) {
+        shop.handlePlayerEnter();
+      } else {
+        shop.handlePlayerExit();
+      }
+    }
   }
 
   toggleInventory(): void {
     this._inventoryOpen = !this._inventoryOpen;
+  }
+
+  openShopModal(): void {
+    this._shops.forEach((shop) => {
+      if (shop.hasPlayer() && !shop.isModalOpen) {
+        shop.openModal();
+      }
+    });
+  }
+
+  closeShopModal(): void {
+    this._shops.forEach((shop) => {
+      if (shop.hasPlayer() && shop.isModalOpen) {
+        shop.closeModal();
+      }
+    });
+  }
+
+  isPlayerInShop(): boolean {
+    return this._shops.some((shop) => shop.hasPlayer());
   }
 }

@@ -19,6 +19,7 @@ import itemAmmoShotgunTexture from "./item-ammo-shotgun.png";
 import itemAmmoRocketLauncherTexture from "./item-ammo-rocket-launcher.png";
 import itemAmmoRailgunTexture from "./item-ammo-railgun.png";
 import bulletRocketTexture from "./bullet-rocket.png";
+import shopLayoutTexture from "./shop-layout.png";
 
 import explosionAnimation from "./explosion-animation.png";
 
@@ -35,6 +36,9 @@ import rocketLauncherSound from "./rocket-launcher.ogg";
 import rocketBlastSound from "./rocket-blast.ogg";
 import railgunSound from "./railgun.ogg";
 import shotgunSound from "./shotgun.ogg";
+import enterShopSound from "./enter-shop.ogg";
+import moneySpentSound from "./money-spent.ogg";
+import mistakeSound from "./mistake.ogg";
 
 export const Assets = {
   floorTexture,
@@ -58,6 +62,7 @@ export const Assets = {
   itemAmmoRocketLauncherTexture,
   itemAmmoRailgunTexture,
   bulletRocketTexture,
+  shopLayoutTexture,
 
   explosionAnimation: {
     image: explosionAnimation,
@@ -78,4 +83,7 @@ export const Assets = {
   rocketBlastSound,
   railgunSound,
   shotgunSound,
+  enterShopSound,
+  moneySpentSound,
+  mistakeSound,
 };

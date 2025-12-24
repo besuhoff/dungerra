@@ -10,11 +10,14 @@ import {
   Player as PlayerMessage,
 } from "./socketEvents";
 import { SessionPlayer } from "./session";
+import { IShop } from "./screen-objects/IShop";
+import { InventoryItemID } from "../config";
 
 export interface IWorld {
   player: IPlayer | null;
   otherPlayers: IOtherPlayer[];
   walls: IWall[];
+  shops: IShop[];
   enemies: IEnemy[];
   bonuses: IBonus[];
   gameOver: boolean;
@@ -24,6 +27,10 @@ export interface IWorld {
   multiplayerMode: "host" | "guest";
   initPlayerFromSession(player: SessionPlayer): void;
   toggleDebug(): void;
+  toggleInventory(): void;
+  openShopModal(): void;
+  closeShopModal(): void;
+  isPlayerInShop(): boolean;
   restart(): void;
   endGame(): void;
   update(dt: number): void;
@@ -37,4 +44,5 @@ export interface IWorld {
   removeOtherPlayer(playerId: string): void;
   applyGameState(delta: GameStateMessage): void;
   applyGameStateDelta(changeset: GameStateDeltaMessage): void;
+  getInventoryTexture(type: InventoryItemID): HTMLImageElement | null;
 }
