@@ -83,6 +83,9 @@ export const AID_KIT_HEAL_AMOUNT = 2;
 export const GOGGLES_SIZE = 32;
 export const GOGGLES_ACTIVE_TIME = 20; // Seconds of night vision mode
 
+// Shop settings
+export const SHOP_SIZE = 64;
+
 // Asset paths
 export const TEXTURES = {
   FLOOR: Assets.floorTexture,
@@ -97,6 +100,7 @@ export const TEXTURES = {
   GOGGLES: Assets.gogglesTexture,
   HEART: Assets.heartTexture,
   SHOP: Assets.shopTexturne,
+  SHOP_LAYOUT: Assets.shopLayoutTexture,
 
   INVENTORY: Assets.inventoryTexture,
   ITEM_RAILGUN: Assets.itemRailgunTexture,
@@ -128,6 +132,9 @@ export const SOUNDS = {
   ROCKET_BLAST: Assets.rocketBlastSound,
   RAILGUN: Assets.railgunSound,
   SHOTGUN: Assets.shotgunSound,
+  ENTER_SHOP: Assets.enterShopSound,
+  MONEY_SPENT: Assets.moneySpentSound,
+  MISTAKE: Assets.mistakeSound,
 };
 
 export type WeaponType = "blaster" | "shotgun" | "railgun" | "rocket_launcher";
@@ -183,20 +190,23 @@ export const BULLET_SOUND_BY_WEAPON_TYPE: Record<WeaponType, string> = {
   rocket_launcher: SOUNDS.ROCKET_LAUNCHER,
 } as const;
 
-export const WEAPON_TYPES_FROM_INVENTORY: WeaponType[] = [
+export const WEAPON_TYPES_LOADED_DIRECTLY_FROM_INVENTORY: WeaponType[] = [
   "railgun",
   "rocket_launcher",
 ] as const;
 
 export const AMMO_INVENTORY_ID_BY_WEAPON_TYPE: Partial<
-  Record<WeaponType, number>
+  Record<WeaponType, InventoryItemID>
 > = {
   shotgun: 22,
   rocket_launcher: 23,
   railgun: 24,
 } as const;
 
-export const WEAPON_INVENTORY_ID_BY_WEAPON_TYPE: Record<WeaponType, number> = {
+export const WEAPON_INVENTORY_ID_BY_WEAPON_TYPE: Record<
+  WeaponType,
+  InventoryItemID
+> = {
   blaster: 1,
   shotgun: 2,
   rocket_launcher: 3,
