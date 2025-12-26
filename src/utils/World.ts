@@ -318,6 +318,194 @@ export class World implements IWorld {
     this.drawUI(uiCtx);
   }
 
+  private drawUI(ctx: CanvasRenderingContext2D): void {
+    if (!this._player) {
+      return;
+    }
+
+    if (!this.gameOver) {
+      const playersBonuses = this._bonuses.filter(
+        (bonus) => bonus.belongsToPlayer
+      );
+
+      for (const bonus of playersBonuses) {
+        // Draw a green arrow pointing to the bonus
+        // If a bonus is off-screen, draw the arrow at the edge of the screen
+        const bonusScreenPoint = this.worldToScreenCoordinates(
+          bonus.getPosition()
+        );
+        const centerScreenPoint = new Point2D(
+          config.SCREEN_WIDTH / 2,
+          config.SCREEN_HEIGHT / 2
+        );
+        const direction = bonusScreenPoint.subtracted(centerScreenPoint);
+        const arrowLength = 10;
+
+        const bonusRadius = (bonus.width * Math.SQRT2) / 2 + 10;
+
+        const distance = Math.sqrt(
+          direction.x * direction.x + direction.y * direction.y
+        );
+        const normalizedDirection = new Point2D(
+          direction.x / distance,
+          direction.y / distance
+        );
+        const arrowEndPoint = new Point2D(
+          centerScreenPoint.x +
+            normalizedDirection.x *
+              Math.min(
+                distance - bonusRadius,
+                config.SCREEN_WIDTH / 2 - arrowLength
+              ),
+          centerScreenPoint.y +
+            normalizedDirection.y *
+              Math.min(
+                distance - bonusRadius,
+                config.SCREEN_HEIGHT / 2 - arrowLength
+              )
+        );
+
+        // Add a light bouncing animation to the arrow
+        const time = Date.now() / 200;
+        const bounceOffset = Math.sin(time) * 3;
+        arrowEndPoint.moveBy(normalizedDirection.x * bounceOffset, normalizedDirection.y * bounceOffset);
+
+        ctx.strokeStyle = "lime";
+        ctx.lineWidth = 2;
+        // Draw a triangle arrowhead
+        ctx.beginPath();
+        ctx.moveTo(arrowEndPoint.x, arrowEndPoint.y);
+        ctx.lineTo(
+          arrowEndPoint.x -
+            normalizedDirection.x * arrowLength +
+            normalizedDirection.y * (arrowLength / 3),
+          arrowEndPoint.y -
+            normalizedDirection.y * arrowLength -
+            normalizedDirection.x * (arrowLength / 3)
+        );
+        ctx.lineTo(
+          arrowEndPoint.x -
+            normalizedDirection.x * arrowLength -
+            normalizedDirection.y * (arrowLength / 3),
+          arrowEndPoint.y -
+            normalizedDirection.y * arrowLength +
+            normalizedDirection.x * (arrowLength / 3)
+        );
+        ctx.lineTo(arrowEndPoint.x, arrowEndPoint.y);
+        ctx.fill();
+        ctx.stroke();
+        ctx.closePath();
+      }
+    }
+
+    ctx.textAlign = "left";
+
+    if (this.gameOver) {
+      ctx.fillStyle = "white";
+      ctx.font = `48px ${config.HEADER_FONT_NAME}`;
+      ctx.textAlign = "center";
+      ctx.fillText(
+        "Game Over",
+        config.SCREEN_WIDTH / 2,
+        config.SCREEN_HEIGHT / 2
+      );
+      ctx.font = `24px ${config.FONT_NAME}`;
+      ctx.fillStyle = "yellow";
+      ctx.fillText(
+        `Your Posthumous Score: ${this._player.score.toFixed(0)}`,
+        config.SCREEN_WIDTH / 2,
+        config.SCREEN_HEIGHT / 2 + 40
+      );
+      ctx.fillStyle = "magenta";
+      ctx.fillText(
+        "Press R to Restart",
+        config.SCREEN_WIDTH / 2,
+        config.SCREEN_HEIGHT / 2 + 80
+      );
+    } else {
+      ctx.fillStyle = "white";
+      ctx.font = `22px ${config.FONT_NAME}`;
+      ctx.fillText(
+        `Lives: ${Array(Math.floor(this._player.lives)).fill("❤️").join(" ")}`,
+        10,
+        30
+      );
+      ctx.fillStyle = "yellow";
+      ctx.fillText(`Money: ${this._player.money.toFixed(0)}$`, 10, 60);
+      ctx.fillStyle = "cyan";
+
+      const symbol = config.BULLET_SYMBOL[this._player.selectedGunType];
+      const bulletsLeft = this._player.bulletsLeft;
+      const bulletsDisplay =
+        bulletsLeft === 0
+          ? "-"
+          : bulletsLeft < 6
+            ? Array(bulletsLeft).fill(symbol).join("")
+            : `${symbol} x ${bulletsLeft}`;
+      ctx.fillText(`Bullets: ${bulletsDisplay}`, 10, 90);
+      if (this._player.hasNightVision()) {
+        ctx.fillStyle = "#90ff90";
+        ctx.fillText(
+          `Night Vision: ${this._player.nightVisionTimer.toFixed(0)}`,
+          10,
+          120
+        );
+      }
+    }
+
+    this._player.drawUI(ctx);
+
+    this._shops.forEach((shop) => shop.drawUI(ctx));
+
+    if (this.debug) {
+      const worldObjectsCount =
+        this._enemies.length +
+        this._walls.length +
+        this._bonuses.length +
+        this._shops.length +
+        Object.values(this._otherPlayers).length +
+        (this._player ? 1 : 0);
+
+      ctx.fillStyle = "white";
+      ctx.font = `12px ${config.FONT_NAME}`;
+      ctx.fillText(
+        `Chunk: ${this.getChunkLeftTop(this.cameraPoint)}`,
+        10,
+        config.SCREEN_HEIGHT - 52
+      );
+      ctx.fillText(
+        `Number of world objects: ${worldObjectsCount}`,
+        10,
+        config.SCREEN_HEIGHT - 66
+      );
+      ctx.fillText(
+        `Camera position: ${this.cameraPoint}`,
+        10,
+        config.SCREEN_HEIGHT - 80
+      );
+      ctx.fillText(
+        `Number of chunks: ${this.chunks.size}`,
+        10,
+        config.SCREEN_HEIGHT - 94
+      );
+      ctx.fillText(
+        `Host: ${this._sessionManager.getCurrentSession()?.host.username}`,
+        10,
+        config.SCREEN_HEIGHT - 108
+      );
+      ctx.fillText(
+        `Session ID: ${this._sessionManager.getCurrentSession()?.id}`,
+        10,
+        config.SCREEN_HEIGHT - 122
+      );
+      ctx.fillText(
+        `Session: ${this._sessionManager.getCurrentSession()?.name}`,
+        10,
+        config.SCREEN_HEIGHT - 136
+      );
+    }
+  }
+
   private drawDarknessOverlay(ctx: CanvasRenderingContext2D): void {
     if (!this._player || !this._player.isAlive()) {
       ctx.fillStyle = config.COLOR_DARK;
@@ -477,119 +665,6 @@ export class World implements IWorld {
 
   restart(): void {
     this._sessionManager.notifyRespawn();
-  }
-
-  private drawUI(ctx: CanvasRenderingContext2D): void {
-    if (!this._player) {
-      return;
-    }
-
-    ctx.textAlign = "left";
-
-    if (this.gameOver) {
-      ctx.fillStyle = "white";
-      ctx.font = `48px ${config.HEADER_FONT_NAME}`;
-      ctx.textAlign = "center";
-      ctx.fillText(
-        "Game Over",
-        config.SCREEN_WIDTH / 2,
-        config.SCREEN_HEIGHT / 2
-      );
-      ctx.font = `24px ${config.FONT_NAME}`;
-      ctx.fillStyle = "yellow";
-      ctx.fillText(
-        `Your Posthumous Score: ${this._player.score.toFixed(0)}`,
-        config.SCREEN_WIDTH / 2,
-        config.SCREEN_HEIGHT / 2 + 40
-      );
-      ctx.fillStyle = "magenta";
-      ctx.fillText(
-        "Press R to Restart",
-        config.SCREEN_WIDTH / 2,
-        config.SCREEN_HEIGHT / 2 + 80
-      );
-    } else {
-      ctx.fillStyle = "white";
-      ctx.font = `22px ${config.FONT_NAME}`;
-      ctx.fillText(
-        `Lives: ${Array(Math.floor(this._player.lives)).fill("❤️").join(" ")}`,
-        10,
-        30
-      );
-      ctx.fillStyle = "yellow";
-      ctx.fillText(`Money: ${this._player.money.toFixed(0)}$`, 10, 60);
-      ctx.fillStyle = "cyan";
-
-      const symbol = config.BULLET_SYMBOL[this._player.selectedGunType];
-      const bulletsLeft = this._player.bulletsLeft;
-      const bulletsDisplay =
-        bulletsLeft === 0
-          ? "-"
-          : bulletsLeft < 6
-            ? Array(bulletsLeft).fill(symbol).join("")
-            : `${symbol} x ${bulletsLeft}`;
-      ctx.fillText(`Bullets: ${bulletsDisplay}`, 10, 90);
-      if (this._player.hasNightVision()) {
-        ctx.fillStyle = "#90ff90";
-        ctx.fillText(
-          `Night Vision: ${this._player.nightVisionTimer.toFixed(0)}`,
-          10,
-          120
-        );
-      }
-    }
-
-    this._player.drawUI(ctx);
-
-    this._shops.forEach((shop) => shop.drawUI(ctx));
-
-    if (this.debug) {
-      const worldObjectsCount =
-        this._enemies.length +
-        this._walls.length +
-        this._bonuses.length +
-        this._shops.length +
-        Object.values(this._otherPlayers).length +
-        (this._player ? 1 : 0);
-
-      ctx.fillStyle = "white";
-      ctx.font = `12px ${config.FONT_NAME}`;
-      ctx.fillText(
-        `Chunk: ${this.getChunkLeftTop(this.cameraPoint)}`,
-        10,
-        config.SCREEN_HEIGHT - 52
-      );
-      ctx.fillText(
-        `Number of world objects: ${worldObjectsCount}`,
-        10,
-        config.SCREEN_HEIGHT - 66
-      );
-      ctx.fillText(
-        `Camera position: ${this.cameraPoint}`,
-        10,
-        config.SCREEN_HEIGHT - 80
-      );
-      ctx.fillText(
-        `Number of chunks: ${this.chunks.size}`,
-        10,
-        config.SCREEN_HEIGHT - 94
-      );
-      ctx.fillText(
-        `Host: ${this._sessionManager.getCurrentSession()?.host.username}`,
-        10,
-        config.SCREEN_HEIGHT - 108
-      );
-      ctx.fillText(
-        `Session ID: ${this._sessionManager.getCurrentSession()?.id}`,
-        10,
-        config.SCREEN_HEIGHT - 122
-      );
-      ctx.fillText(
-        `Session: ${this._sessionManager.getCurrentSession()?.name}`,
-        10,
-        config.SCREEN_HEIGHT - 136
-      );
-    }
   }
 
   getInventoryTexture(type: config.InventoryItemID): HTMLImageElement | null {
@@ -764,6 +839,10 @@ export class World implements IWorld {
         this._bonuses.push(new this._Bonus(this, updatedBonus));
         continue;
       }
+    }
+
+    for (const removedBonusId of changeset.removedBonuses) {
+      this._bonuses = this._bonuses.filter((b) => b.id !== removedBonusId);
     }
 
     for (const bulletData of Object.values(changeset.updatedBullets)) {

@@ -8,8 +8,17 @@ import { InventoryItem, Bonus as BonusMessage } from "../types/socketEvents";
 import { Point2D } from "../utils/geometry/Point2D";
 
 export class Bonus extends ScreenObject implements IBonus {
-  public type: BonusType;
+  private _type: BonusType;
+  private _belongsToPlayer: boolean = false;
   private image: HTMLImageElement | null = null;
+
+  get type(): BonusType {
+    return this._type;
+  }
+
+  get belongsToPlayer(): boolean {
+    return this._belongsToPlayer;
+  }
 
   constructor(
     private world: IWorld,
@@ -34,7 +43,8 @@ export class Bonus extends ScreenObject implements IBonus {
 
     super(point, size, size, data.id);
 
-    this.type = data.type as BonusType;
+    this._type = data.type as BonusType;
+    this._belongsToPlayer = data.droppedBy === world.player?.id;
 
     loadImage(texturePath).then((img) => {
       this.image = img;
