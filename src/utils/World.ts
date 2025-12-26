@@ -36,6 +36,7 @@ export class World implements IWorld {
   private readonly CHUNK_SIZE = 2000; // Same as screen width for now
   private _player: IPlayer | null = null;
   private _otherPlayers: Record<string, IOtherPlayer> = {};
+  private _otherPlayerCoordinates: Record<string, IPoint> = {};
 
   private _enemies: IEnemy[] = [];
   private _walls: IWall[] = [];
@@ -318,6 +319,90 @@ export class World implements IWorld {
     this.drawUI(uiCtx);
   }
 
+  private drawArrowToPoint(
+    ctx: CanvasRenderingContext2D,
+    point: IPoint,
+    padding: number,
+    color: string,
+    fadeWhenOnScreen: boolean = false
+  ): void {
+    const screenPoint = this.worldToScreenCoordinates(point);
+    const isOnScreen =
+      screenPoint.x >= 0 &&
+      screenPoint.x <= config.SCREEN_WIDTH &&
+      screenPoint.y >= 0 &&
+      screenPoint.y <= config.SCREEN_HEIGHT;
+
+    if (isOnScreen && fadeWhenOnScreen) {
+      return;
+    }
+
+    const centerScreenPoint = new Point2D(
+      config.SCREEN_WIDTH / 2,
+      config.SCREEN_HEIGHT / 2
+    );
+    const direction = screenPoint.subtracted(centerScreenPoint);
+    const arrowLength = 10;
+
+    const bonusRadius = padding;
+
+    const distance = Math.sqrt(
+      direction.x * direction.x + direction.y * direction.y
+    );
+    const normalizedDirection = new Point2D(
+      direction.x / distance,
+      direction.y / distance
+    );
+    const arrowEndPoint = new Point2D(
+      centerScreenPoint.x +
+        normalizedDirection.x *
+          Math.min(
+            distance - bonusRadius,
+            config.SCREEN_WIDTH / 2 - arrowLength
+          ),
+      centerScreenPoint.y +
+        normalizedDirection.y *
+          Math.min(
+            distance - bonusRadius,
+            config.SCREEN_HEIGHT / 2 - arrowLength
+          )
+    );
+
+    // Add a light bouncing animation to the arrow
+    const time = Date.now() / 200;
+    const bounceOffset = Math.sin(time) * 3;
+    arrowEndPoint.moveBy(
+      normalizedDirection.x * bounceOffset,
+      normalizedDirection.y * bounceOffset
+    );
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    // Draw a triangle arrowhead
+    ctx.beginPath();
+    ctx.moveTo(arrowEndPoint.x, arrowEndPoint.y);
+    ctx.lineTo(
+      arrowEndPoint.x -
+        normalizedDirection.x * arrowLength +
+        normalizedDirection.y * (arrowLength / 3),
+      arrowEndPoint.y -
+        normalizedDirection.y * arrowLength -
+        normalizedDirection.x * (arrowLength / 3)
+    );
+    ctx.lineTo(
+      arrowEndPoint.x -
+        normalizedDirection.x * arrowLength -
+        normalizedDirection.y * (arrowLength / 3),
+      arrowEndPoint.y -
+        normalizedDirection.y * arrowLength +
+        normalizedDirection.x * (arrowLength / 3)
+    );
+    ctx.lineTo(arrowEndPoint.x, arrowEndPoint.y);
+    ctx.fill();
+    ctx.stroke();
+    ctx.closePath();
+  }
+
   private drawUI(ctx: CanvasRenderingContext2D): void {
     if (!this._player) {
       return;
@@ -331,70 +416,22 @@ export class World implements IWorld {
       for (const bonus of playersBonuses) {
         // Draw a green arrow pointing to the bonus
         // If a bonus is off-screen, draw the arrow at the edge of the screen
-        const bonusScreenPoint = this.worldToScreenCoordinates(
-          bonus.getPosition()
+        this.drawArrowToPoint(
+          ctx,
+          bonus.getPosition(),
+          (bonus.width * Math.SQRT2) / 2 + 10,
+          "lime"
         );
-        const centerScreenPoint = new Point2D(
-          config.SCREEN_WIDTH / 2,
-          config.SCREEN_HEIGHT / 2
-        );
-        const direction = bonusScreenPoint.subtracted(centerScreenPoint);
-        const arrowLength = 10;
+      }
 
-        const bonusRadius = (bonus.width * Math.SQRT2) / 2 + 10;
-
-        const distance = Math.sqrt(
-          direction.x * direction.x + direction.y * direction.y
+      for (const position of Object.values(this._otherPlayerCoordinates)) {
+        this.drawArrowToPoint(
+          ctx,
+          position,
+          (config.PLAYER_SIZE * Math.SQRT2) / 2 + 10,
+          "yellow",
+          true
         );
-        const normalizedDirection = new Point2D(
-          direction.x / distance,
-          direction.y / distance
-        );
-        const arrowEndPoint = new Point2D(
-          centerScreenPoint.x +
-            normalizedDirection.x *
-              Math.min(
-                distance - bonusRadius,
-                config.SCREEN_WIDTH / 2 - arrowLength
-              ),
-          centerScreenPoint.y +
-            normalizedDirection.y *
-              Math.min(
-                distance - bonusRadius,
-                config.SCREEN_HEIGHT / 2 - arrowLength
-              )
-        );
-
-        // Add a light bouncing animation to the arrow
-        const time = Date.now() / 200;
-        const bounceOffset = Math.sin(time) * 3;
-        arrowEndPoint.moveBy(normalizedDirection.x * bounceOffset, normalizedDirection.y * bounceOffset);
-
-        ctx.strokeStyle = "lime";
-        ctx.lineWidth = 2;
-        // Draw a triangle arrowhead
-        ctx.beginPath();
-        ctx.moveTo(arrowEndPoint.x, arrowEndPoint.y);
-        ctx.lineTo(
-          arrowEndPoint.x -
-            normalizedDirection.x * arrowLength +
-            normalizedDirection.y * (arrowLength / 3),
-          arrowEndPoint.y -
-            normalizedDirection.y * arrowLength -
-            normalizedDirection.x * (arrowLength / 3)
-        );
-        ctx.lineTo(
-          arrowEndPoint.x -
-            normalizedDirection.x * arrowLength -
-            normalizedDirection.y * (arrowLength / 3),
-          arrowEndPoint.y -
-            normalizedDirection.y * arrowLength +
-            normalizedDirection.x * (arrowLength / 3)
-        );
-        ctx.lineTo(arrowEndPoint.x, arrowEndPoint.y);
-        ctx.fill();
-        ctx.stroke();
-        ctx.closePath();
       }
     }
 
@@ -738,6 +775,15 @@ export class World implements IWorld {
         shop.handlePlayerEnter();
       }
     }
+
+    for (const [id, coordinates] of Object.entries(
+      state.otherPlayerPositions
+    )) {
+      this._otherPlayerCoordinates[id] = new Point2D(
+        coordinates.x,
+        coordinates.y
+      );
+    }
   }
 
   applyGameStateDelta(changeset: GameStateDeltaMessage): void {
@@ -909,12 +955,27 @@ export class World implements IWorld {
       this._shops = this._shops.filter((s) => s.id !== removedShopId);
     }
 
-    for (const shop of Object.values(this._shops)) {
-      if (changeset.playersShops.includes(shop.id)) {
-        shop.handlePlayerEnter();
-      } else {
-        shop.handlePlayerExit();
-      }
+    for (const addedPlayerShopId of changeset.addedPlayersShops) {
+      const shop = this._shops.find((s) => s.id === addedPlayerShopId);
+      shop?.handlePlayerEnter();
+    }
+
+    for (const removedPlayerShopId of changeset.removedPlayersShops) {
+      const shop = this._shops.find((s) => s.id === removedPlayerShopId);
+      shop?.handlePlayerExit();
+    }
+
+    for (const [id, coordinates] of Object.entries(
+      changeset.updatedOtherPlayerPositions
+    )) {
+      this._otherPlayerCoordinates[id] = new Point2D(
+        coordinates.x,
+        coordinates.y
+      );
+    }
+
+    for (const id of changeset.removedOtherPlayerPositions) {
+      delete this._otherPlayerCoordinates[id];
     }
   }
 
