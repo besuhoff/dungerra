@@ -298,8 +298,7 @@ export class Player extends ScreenObject implements IPlayer {
             item.type as config.InventoryItemID
           );
           const itemCenterX =
-            (isAmmo ? item.type - inventoryPanelCellSize / 2 : item.type) *
-              inventoryPanelCellSize -
+            (isAmmo ? item.type - 20 : item.type) * inventoryPanelCellSize -
             inventoryPanelCellSize / 2;
           const itemCenterY = isAmmo
             ? inventoryPanelCellSize / 2
