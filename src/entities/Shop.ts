@@ -13,6 +13,7 @@ export class Shop extends ScreenObject implements IShop {
   private _inventory: Record<number, ShopItem> = {};
   private _isEnteredByPlayer: boolean = false;
   private _modalOpen: boolean = false;
+  private _name: string = "";
 
   constructor(
     private world: IWorld,
@@ -22,6 +23,7 @@ export class Shop extends ScreenObject implements IShop {
     super(point, config.SHOP_SIZE, config.SHOP_SIZE, shopData.id);
 
     this._inventory = shopData.inventory || {};
+    this._name = shopData.name;
 
     // Load player sprite
     loadImage(config.TEXTURES.SHOP).then((img) => {
@@ -109,6 +111,28 @@ export class Shop extends ScreenObject implements IShop {
       this.width,
       this.height
     );
+
+    // Set font first to measure text
+    ctx.font = `14px ${config.FONT_NAME}`;
+    const textMetrics = ctx.measureText(this._name);
+
+    // Draw background
+    const padding = 3;
+    const bgWidth = textMetrics.width + padding * 2;
+    const bgHeight = textMetrics.actualBoundingBoxAscent + padding * 2; // Font size + padding
+
+    ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+    ctx.fillRect(-bgWidth / 2, this.height / 2 + 30, bgWidth, bgHeight);
+
+    // Write nickname
+    ctx.fillStyle = "white";
+    ctx.textAlign = "center";
+    ctx.fillText(
+      this._name,
+      0,
+      this.height / 2 + 30 + textMetrics.actualBoundingBoxAscent + padding
+    );
+
     ctx.restore();
 
     if (this.world.debug) {
@@ -140,7 +164,7 @@ export class Shop extends ScreenObject implements IShop {
       uiCtx.fillText(
         "Press Enter to visit the Shop",
         uiCtx.canvas.width / 2,
-        uiCtx.canvas.height - 30
+        uiCtx.canvas.height - config.MESSAGE_PADDING_BOTTOM
       );
       uiCtx.restore();
     } else {
@@ -164,12 +188,12 @@ export class Shop extends ScreenObject implements IShop {
 
       // Draw instructions background
       const padding = 5;
-      const bgWidth = 320;
-      const bgHeight = 48;
+      const bgWidth = 400;
+      const bgHeight = 72;
       uiCtx.fillStyle = "rgba(0, 0, 0, 0.5)";
       uiCtx.fillRect(
         (uiCtx.canvas.width - bgWidth) / 2 - padding,
-        uiCtx.canvas.height - 76 - padding,
+        uiCtx.canvas.height - 88 - padding,
         bgWidth + padding * 2,
         bgHeight + padding * 2
       );
@@ -191,11 +215,16 @@ export class Shop extends ScreenObject implements IShop {
       uiCtx.fillStyle = "white";
       uiCtx.textAlign = "center";
       uiCtx.font = `14px ${config.FONT_NAME}`;
-      uiCtx.fillText(hint, uiCtx.canvas.width / 2, uiCtx.canvas.height - 60);
+      uiCtx.fillText(
+        "🟨 - available, 🟥 - not enough money, 🟩 - already owned",
+        uiCtx.canvas.width / 2,
+        uiCtx.canvas.height - 72
+      );
+      uiCtx.fillText(hint, uiCtx.canvas.width / 2, uiCtx.canvas.height - 50);
       uiCtx.fillText(
         "Press Escape to close the Shop.",
         uiCtx.canvas.width / 2,
-        uiCtx.canvas.height - 38
+        uiCtx.canvas.height - 28
       );
 
       // Draw inventory items
@@ -254,6 +283,10 @@ export class Shop extends ScreenObject implements IShop {
 
         if (player && player.money < item.price * item.packSize) {
           uiCtx.fillStyle = "#ff4d4dff";
+        }
+
+        if (isWeapon && player && player.hasInventoryItem(itemId)) {
+          uiCtx.fillStyle = "#4dff4dff";
         }
 
         uiCtx.font = `20px ${config.FONT_NAME}`;

@@ -2,6 +2,7 @@ export type PlaySoundOptions = {
   volume?: number;
   loop?: boolean;
   offset?: number;
+  when?: number;
 };
 
 export class AudioManager {
@@ -74,7 +75,7 @@ export class AudioManager {
       }
     };
 
-    source.start(0, options?.offset ?? 0);
+    source.start(options?.when ?? 0, options?.offset ?? 0);
   }
 
   stopSound(soundPath: string): void {
