@@ -83,6 +83,12 @@ export const AID_KIT_HEAL_AMOUNT = 2;
 export const GOGGLES_SIZE = 32;
 export const GOGGLES_ACTIVE_TIME = 20; // Seconds of night vision mode
 
+export const CHEST_SIZE = 32;
+
+// UI settings
+export const INVENTORY_MARGIN_BOTTOM = 30;
+export const MESSAGE_PADDING_BOTTOM = 160;
+
 // Shop settings
 export const SHOP_SIZE = 64;
 
@@ -98,6 +104,7 @@ export const TEXTURES = {
   BLOOD: Assets.bloodTexture,
   AID_KIT: Assets.aidKitTexture,
   GOGGLES: Assets.gogglesTexture,
+  CHEST: Assets.chestTexture,
   HEART: Assets.heartTexture,
   SHOP: Assets.shopTexturne,
   SHOP_LAYOUT: Assets.shopLayoutTexture,
@@ -156,6 +163,7 @@ export const INVENTORY_ITEM_IDS = {
   AMMO_RAILGUN: 24,
   GOGGLES: 7,
   AID_KIT: 8,
+  MONEY: 100,
 } as const;
 
 export type InventoryItemID =

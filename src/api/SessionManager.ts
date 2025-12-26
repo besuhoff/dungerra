@@ -111,7 +111,7 @@ export class SessionManager {
     return this.currentSession;
   }
 
-  public notifyRespawn(player: IPlayer): void {
+  public notifyRespawn(): void {
     if (!this.currentSession) {
       console.warn("Attempting to notify about respawn without active session");
       return;
@@ -121,9 +121,7 @@ export class SessionManager {
       type: MessageType.PLAYER_RESPAWN,
       payload: {
         oneofKind: "playerRespawn",
-        playerRespawn: PlayerRespawnMessage.create({
-          playerId: player.id,
-        }),
+        playerRespawn: PlayerRespawnMessage.create(),
       },
     });
   }

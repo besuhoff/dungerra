@@ -43,10 +43,8 @@ export class World implements IWorld {
   private _shops: IShop[] = [];
 
   private _gameOver: boolean = false;
-  private _inventoryOpen: boolean = true;
 
   private floorTexture: HTMLImageElement | null = null;
-  private inventoryTexture: HTMLImageElement | null = null;
   private inventoryItemTextures: Partial<
     Record<config.InventoryItemID, HTMLImageElement>
   > = {};
@@ -146,11 +144,6 @@ export class World implements IWorld {
       this.floorTexture = img;
     });
 
-    // Load inventory texture
-    loadImage(config.TEXTURES.INVENTORY).then((img) => {
-      this.inventoryTexture = img;
-    });
-
     Object.entries(config.INVENTORY_ITEM_TEXTURES).forEach(
       ([key, texturePath]) => {
         loadImage(texturePath).then((img) => {
@@ -161,10 +154,6 @@ export class World implements IWorld {
     );
 
     this._bulletManager = new this._BulletManager(this);
-  }
-
-  initPlayerFromSession(player: SessionPlayer): void {
-    this._player = this._Player.createFromSessionPlayer(this, player);
   }
 
   addOtherPlayer(player: PlayerMessage): void {
@@ -211,7 +200,9 @@ export class World implements IWorld {
   endGame(): void {
     if (!this._gameOver) {
       this._gameOver = true;
-      AudioManager.getInstance().playSound(config.SOUNDS.GAME_OVER);
+      AudioManager.getInstance().playSound(config.SOUNDS.GAME_OVER, {
+        when: 1.5,
+      });
     }
   }
 
@@ -421,16 +412,7 @@ export class World implements IWorld {
     if (this._previousInputState) {
       for (const key of Object.keys(this._previousInputState.purchaseItemKey)) {
         if (!purchaseItemKey[Number(key)]) {
-          const itemId = Number(key) as config.InventoryItemID;
-
-          if (
-            Object.values(config.WEAPON_INVENTORY_ID_BY_WEAPON_TYPE).includes(
-              itemId
-            ) &&
-            this._player.hasInventoryItem(itemId)
-          ) {
-            AudioManager.getInstance().playSound(config.SOUNDS.MISTAKE);
-          }
+          this.handleShoppingAttempt(Number(key) as config.InventoryItemID);
         }
       }
     }
@@ -469,8 +451,32 @@ export class World implements IWorld {
     }
   }
 
+  handleShoppingAttempt(itemId: config.InventoryItemID): void {
+    const isWeapon = Object.values(
+      config.WEAPON_INVENTORY_ID_BY_WEAPON_TYPE
+    ).includes(itemId);
+
+    if (isWeapon && this._player?.hasInventoryItem(itemId)) {
+      AudioManager.getInstance().playSound(config.SOUNDS.MISTAKE);
+      return;
+    }
+
+    const playerShop = this.shops.find(
+      (shop) => shop.hasPlayer() && shop.isModalOpen
+    );
+
+    if (playerShop && playerShop.inventory[itemId]) {
+      const item = playerShop.inventory[itemId];
+      const totalPrice = item.price * item.packSize;
+
+      if (this._player && this._player.money <= totalPrice) {
+        AudioManager.getInstance().playSound(config.SOUNDS.MISTAKE);
+      }
+    }
+  }
+
   restart(): void {
-    this._sessionManager.notifyRespawn(this._player!);
+    this._sessionManager.notifyRespawn();
   }
 
   private drawUI(ctx: CanvasRenderingContext2D): void {
@@ -492,7 +498,7 @@ export class World implements IWorld {
       ctx.font = `24px ${config.FONT_NAME}`;
       ctx.fillStyle = "yellow";
       ctx.fillText(
-        `Your posthumous royalties: ${this._player.money.toFixed(0)}$`,
+        `Your Posthumous Score: ${this._player.score.toFixed(0)}`,
         config.SCREEN_WIDTH / 2,
         config.SCREEN_HEIGHT / 2 + 40
       );
@@ -511,7 +517,7 @@ export class World implements IWorld {
         30
       );
       ctx.fillStyle = "yellow";
-      ctx.fillText(`Rewards: ${this._player.money.toFixed(0)}$`, 10, 60);
+      ctx.fillText(`Money: ${this._player.money.toFixed(0)}$`, 10, 60);
       ctx.fillStyle = "cyan";
 
       const symbol = config.BULLET_SYMBOL[this._player.selectedGunType];
@@ -530,92 +536,6 @@ export class World implements IWorld {
           10,
           120
         );
-      }
-    }
-
-    // Draw inventory UI in the center bottom
-    if (this.inventoryTexture && !this.gameOver && this._inventoryOpen) {
-      const width = this.inventoryTexture.width;
-      const height = this.inventoryTexture.height;
-
-      ctx.drawImage(
-        this.inventoryTexture,
-        config.SCREEN_WIDTH / 2 - width / 2,
-        config.SCREEN_HEIGHT - height - 50,
-        width,
-        height
-      );
-
-      const player = this._player;
-
-      if (player.inventory) {
-        player.inventory.forEach((item) => {
-          if (!item.quantity) {
-            return;
-          }
-
-          const texture =
-            this.inventoryItemTextures[item.type as config.InventoryItemID];
-
-          if (!texture) {
-            return;
-          }
-
-          const isAmmo = config.AMMO_ITEM_IDS.includes(
-            item.type as config.InventoryItemID
-          );
-          const itemX = (isAmmo ? item.type - 20 : item.type) * 41 - 18;
-          const itemY = isAmmo ? 22 : 64;
-
-          ctx.drawImage(
-            texture,
-            config.SCREEN_WIDTH / 2 - width / 2 + itemX - texture.width / 2,
-            config.SCREEN_HEIGHT - height - 50 + itemY - texture.height / 2,
-            texture.width,
-            texture.height
-          );
-
-          if (item.quantity > 1) {
-            // Draw a background for better readability
-            ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
-            ctx.fillRect(
-              config.SCREEN_WIDTH / 2 - width / 2 + itemX - texture.width / 2,
-              config.SCREEN_HEIGHT -
-                height -
-                50 +
-                itemY +
-                texture.height / 2 -
-                16,
-              texture.width,
-              16
-            );
-
-            // Draw quantity
-            ctx.fillStyle = "white";
-            ctx.font = `16px ${config.FONT_NAME}`;
-            ctx.textAlign = "right";
-            ctx.fillText(
-              `x${item.quantity}`,
-              config.SCREEN_WIDTH / 2 - width / 2 + itemX + texture.width / 2,
-              config.SCREEN_HEIGHT - height - 50 + itemY + texture.height / 2
-            );
-          }
-
-          if (
-            item.type ===
-            config.WEAPON_INVENTORY_ID_BY_WEAPON_TYPE[player.selectedGunType]
-          ) {
-            // Highlight the selected weapon in the inventory
-            ctx.strokeStyle = "yellow";
-            ctx.lineWidth = 2;
-            ctx.strokeRect(
-              config.SCREEN_WIDTH / 2 - width / 2 + itemX - texture.width / 2,
-              config.SCREEN_HEIGHT - height - 50 + itemY - texture.height / 2,
-              texture.width,
-              texture.height
-            );
-          }
-        });
       }
     }
 
@@ -676,10 +596,14 @@ export class World implements IWorld {
     return this.inventoryItemTextures[type] || null;
   }
 
-  applyGameState(state: GameStateMessage): void {
+  applyGameState(state: GameStateMessage, currentPlayerId: string): void {
+    this._player = this._Player.fromGameState(
+      this,
+      state.players[currentPlayerId]
+    );
+
     for (const playerData of Object.values(state.players)) {
-      if (playerData.id === this._player?.id) {
-        this._player.applyFromGameState(playerData);
+      if (playerData.id === this._player.id) {
         continue;
       }
 
@@ -722,14 +646,7 @@ export class World implements IWorld {
     for (const bonusData of Object.values(state.bonuses)) {
       const bonus = this._bonuses.find((b) => b.id === bonusData.id);
       if (!bonus) {
-        this._bonuses.push(
-          new this._Bonus(
-            this,
-            new Point2D(bonusData.position!.x, bonusData.position!.y),
-            bonusData.type as BonusType,
-            bonusData.id
-          )
-        );
+        this._bonuses.push(new this._Bonus(this, bonusData));
       }
     }
 
@@ -763,7 +680,9 @@ export class World implements IWorld {
     for (const updatedPlayer of Object.values(changeset.updatedPlayers)) {
       if (updatedPlayer.id === this._player?.id) {
         if (updatedPlayer.isAlive && !this._player.isAlive()) {
-          AudioManager.getInstance().playSound(config.SOUNDS.SPAWN);
+          const audioManager = AudioManager.getInstance();
+          audioManager.playSound(config.SOUNDS.SPAWN);
+          audioManager.stopSound(config.SOUNDS.GAME_OVER);
           this._gameOver = false;
         }
         this._player.applyFromGameState(updatedPlayer);
@@ -842,14 +761,7 @@ export class World implements IWorld {
 
       const bonus = this._bonuses.find((b) => b.id === updatedBonus.id);
       if (!bonus) {
-        this._bonuses.push(
-          new this._Bonus(
-            this,
-            new Point2D(updatedBonus.position!.x, updatedBonus.position!.y),
-            updatedBonus.type as BonusType,
-            updatedBonus.id
-          )
-        );
+        this._bonuses.push(new this._Bonus(this, updatedBonus));
         continue;
       }
     }
@@ -928,7 +840,7 @@ export class World implements IWorld {
   }
 
   toggleInventory(): void {
-    this._inventoryOpen = !this._inventoryOpen;
+    this._player?.toggleInventory();
   }
 
   openShopModal(): void {

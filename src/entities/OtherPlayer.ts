@@ -246,10 +246,6 @@ export class OtherPlayer extends ScreenObject implements IOtherPlayer {
     return this._invulnerableTimer > 0;
   }
 
-  addNightVision(): void {
-    this._nightVisionTimer = config.GOGGLES_ACTIVE_TIME;
-  }
-
   hasNightVision(): boolean {
     // TODO: implement if needed
     return false;

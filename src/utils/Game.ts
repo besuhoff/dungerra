@@ -100,7 +100,8 @@ export class Game {
 
     this._sessionManager.onGameState((changeset) => {
       if (this._world) {
-        this._world.applyGameState(changeset);
+        const userData = this._authManager.getUserData();
+        this._world.applyGameState(changeset, userData!.id);
       }
     });
 
@@ -176,7 +177,6 @@ export class Game {
         multiplayerMode
       );
 
-      this._world.initPlayerFromSession(session.players[userData!.id]);
       this._started = true;
       requestAnimationFrame((timestamp) => this.gameLoop(timestamp));
     }

@@ -1,10 +1,11 @@
 import { IBonus } from "../types/screen-objects/IBonus";
 import { BonusType } from "../types/screen-objects/IBonus";
-import { IPoint } from "../types/geometry/IPoint";
 import { IWorld } from "../types/IWorld";
 import { ScreenObject } from "./ScreenObject";
 import { loadImage } from "../utils/loadImage";
 import * as config from "../config";
+import { InventoryItem, Bonus as BonusMessage } from "../types/socketEvents";
+import { Point2D } from "../utils/geometry/Point2D";
 
 export class Bonus extends ScreenObject implements IBonus {
   public type: BonusType;
@@ -12,25 +13,28 @@ export class Bonus extends ScreenObject implements IBonus {
 
   constructor(
     private world: IWorld,
-    point: IPoint,
-    type: BonusType,
-    id?: string
+    data: BonusMessage
   ) {
     // Load appropriate texture
     let texturePath: string = "";
     let size: number = 0;
 
-    if (type === "aid_kit") {
+    if (data.type === "aid_kit") {
       texturePath = config.TEXTURES.AID_KIT;
       size = config.AID_KIT_SIZE;
-    } else if (type === "goggles") {
+    } else if (data.type === "goggles") {
       texturePath = config.TEXTURES.GOGGLES;
       size = config.GOGGLES_SIZE;
+    } else if (data.type === "chest") {
+      texturePath = config.TEXTURES.CHEST;
+      size = config.CHEST_SIZE;
     }
 
-    super(point, size, size, id);
+    const point = new Point2D(data.position!.x, data.position!.y);
 
-    this.type = type;
+    super(point, size, size, data.id);
+
+    this.type = data.type as BonusType;
 
     loadImage(texturePath).then((img) => {
       this.image = img;

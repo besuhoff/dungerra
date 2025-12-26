@@ -25,7 +25,6 @@ export interface IWorld {
   torchRadius: number;
   debug: boolean;
   multiplayerMode: "host" | "guest";
-  initPlayerFromSession(player: SessionPlayer): void;
   toggleDebug(): void;
   toggleInventory(): void;
   openShopModal(): void;
@@ -42,7 +41,7 @@ export interface IWorld {
   worldToScreenCoordinates(point: IPoint): IPoint;
   addOtherPlayer(player: PlayerMessage): void;
   removeOtherPlayer(playerId: string): void;
-  applyGameState(delta: GameStateMessage): void;
+  applyGameState(delta: GameStateMessage, currentPlayerId: string): void;
   applyGameStateDelta(changeset: GameStateDeltaMessage): void;
   getInventoryTexture(type: InventoryItemID): HTMLImageElement | null;
 }

@@ -15,6 +15,15 @@ import { Point2D } from "../utils/geometry/Point2D";
 
 export class Player extends ScreenObject implements IPlayer {
   private _nightVisionTimer: number = 0;
+  private _rotation: number = 0;
+  private _bullets: IBullet[] = [];
+  private _bulletsLeft: number = config.PLAYER_MAX_BULLETS;
+  private _kills: number = 0;
+  private _money: number = 0;
+  private _score: number = 0;
+  private _selectedGunType: config.WeaponType = "blaster";
+  private _inventory: InventoryItemMessage[] = [];
+
   private _images: Record<config.WeaponType, HTMLImageElement | null> = {
     blaster: null,
     shotgun: null,
@@ -22,13 +31,8 @@ export class Player extends ScreenObject implements IPlayer {
     rocket_launcher: null,
   };
   private _imageDead: HTMLImageElement | null = null;
-  private _rotation: number = 0;
-  private _bullets: IBullet[] = [];
-  private _bulletsLeft: number = config.PLAYER_MAX_BULLETS;
-  private _kills: number = 0;
-  private _money: number = 0;
-  private _selectedGunType: config.WeaponType = "blaster";
-  private _inventory: InventoryItemMessage[] = [];
+  private _inventoryImage: HTMLImageElement | null = null;
+  private _inventoryOpen: boolean = true;
 
   private _invulnerableTimer: number = 0;
   // private _rechargeAccumulator: number = 0;
@@ -44,6 +48,10 @@ export class Player extends ScreenObject implements IPlayer {
 
   get money(): number {
     return this._money;
+  }
+
+  get score(): number {
+    return this._score;
   }
 
   get kills(): number {
@@ -74,6 +82,10 @@ export class Player extends ScreenObject implements IPlayer {
     return this._inventory.some(
       (item) => item.type === itemType && item.quantity > 0
     );
+  }
+
+  toggleInventory(): void {
+    this._inventoryOpen = !this._inventoryOpen;
   }
 
   static createFromSessionPlayer(
@@ -118,6 +130,10 @@ export class Player extends ScreenObject implements IPlayer {
         this._images.rocket_launcher = img;
       }
     );
+    // Load inventory texture
+    loadImage(config.TEXTURES.INVENTORY).then((img) => {
+      this._inventoryImage = img;
+    });
 
     loadImage(config.TEXTURES.BLOOD).then((img) => {
       this._imageDead = img;
@@ -245,6 +261,130 @@ export class Player extends ScreenObject implements IPlayer {
   }
 
   drawUI(ctx: CanvasRenderingContext2D): void {
+    // Draw inventory UI in the center bottom
+    if (this._inventoryImage && !this.world.gameOver && this._inventoryOpen) {
+      ctx.save();
+      ctx.globalAlpha = 0.7;
+      const inventoryPanelWidth = this._inventoryImage.width;
+      const inventoryPanelHeight = this._inventoryImage.height;
+      const inventoryPanelMarginBottom = config.INVENTORY_MARGIN_BOTTOM;
+      const inventoryPanelCellSize = 42;
+
+      ctx.drawImage(
+        this._inventoryImage,
+        config.SCREEN_WIDTH / 2 - inventoryPanelWidth / 2,
+        config.SCREEN_HEIGHT -
+          inventoryPanelHeight -
+          inventoryPanelMarginBottom,
+        inventoryPanelWidth,
+        inventoryPanelHeight
+      );
+
+      if (this._inventory) {
+        this._inventory.forEach((item) => {
+          if (!item.quantity) {
+            return;
+          }
+
+          const itemTexture = this.world.getInventoryTexture(
+            item.type as config.InventoryItemID
+          );
+
+          if (!itemTexture) {
+            return;
+          }
+
+          const isAmmo = config.AMMO_ITEM_IDS.includes(
+            item.type as config.InventoryItemID
+          );
+          const itemCenterX =
+            (isAmmo ? item.type - inventoryPanelCellSize / 2 : item.type) *
+              inventoryPanelCellSize -
+            inventoryPanelCellSize / 2;
+          const itemCenterY = isAmmo
+            ? inventoryPanelCellSize / 2
+            : inventoryPanelCellSize * 1.5;
+
+          ctx.drawImage(
+            itemTexture,
+            config.SCREEN_WIDTH / 2 -
+              inventoryPanelWidth / 2 +
+              itemCenterX -
+              itemTexture.width / 2,
+            config.SCREEN_HEIGHT -
+              inventoryPanelHeight -
+              inventoryPanelMarginBottom +
+              itemCenterY -
+              itemTexture.height / 2,
+            itemTexture.width,
+            itemTexture.height
+          );
+
+          if (item.quantity > 1) {
+            // Draw a background for better readability
+            ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+            ctx.fillRect(
+              config.SCREEN_WIDTH / 2 -
+                inventoryPanelWidth / 2 +
+                itemCenterX -
+                inventoryPanelCellSize / 2,
+              config.SCREEN_HEIGHT -
+                inventoryPanelHeight -
+                inventoryPanelMarginBottom +
+                itemCenterY +
+                inventoryPanelCellSize / 2 -
+                16,
+              itemTexture.width,
+              16
+            );
+
+            // Draw quantity
+            ctx.fillStyle = "white";
+            ctx.font = `16px ${config.FONT_NAME}`;
+            ctx.textAlign = "right";
+            ctx.fillText(
+              `x${item.quantity}`,
+              config.SCREEN_WIDTH / 2 -
+                inventoryPanelWidth / 2 +
+                itemCenterX +
+                inventoryPanelCellSize / 2 -
+                4,
+              config.SCREEN_HEIGHT -
+                inventoryPanelHeight -
+                inventoryPanelMarginBottom +
+                itemCenterY +
+                inventoryPanelCellSize / 2 -
+                4
+            );
+          }
+
+          if (
+            item.type ===
+            config.WEAPON_INVENTORY_ID_BY_WEAPON_TYPE[this._selectedGunType]
+          ) {
+            // Highlight the selected weapon in the inventory
+            ctx.strokeStyle = "yellow";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(
+              config.SCREEN_WIDTH / 2 -
+                inventoryPanelWidth / 2 +
+                itemCenterX -
+                inventoryPanelCellSize / 2,
+              config.SCREEN_HEIGHT -
+                inventoryPanelHeight -
+                inventoryPanelMarginBottom +
+                itemCenterY -
+                inventoryPanelCellSize / 2,
+              inventoryPanelCellSize,
+              inventoryPanelCellSize
+            );
+          }
+        });
+      }
+
+      ctx.restore();
+    }
+
     if (this.world.debug) {
       // Draw debug data
       ctx.fillStyle = "white";
@@ -283,7 +423,24 @@ export class Player extends ScreenObject implements IPlayer {
     return this._invulnerableTimer > 0;
   }
 
+  static fromGameState(world: IWorld, playerData: PlayerMessage): IPlayer {
+    const position = new Point2D(
+      playerData.position!.x,
+      playerData.position!.y
+    );
+    const player = new Player(
+      world,
+      position,
+      playerData.rotation,
+      playerData.id
+    );
+    player.applyFromGameState(playerData);
+    return player;
+  }
+
   applyFromGameState(changeset: PlayerMessage): void {
+    this._score = changeset.score;
+
     if (changeset.position) {
       this.getPosition().setTo(changeset.position.x, changeset.position.y);
 
@@ -298,9 +455,7 @@ export class Player extends ScreenObject implements IPlayer {
 
     // Check win/lose conditions
     if (!this.isAlive()) {
-      setTimeout(() => {
-        this.world.endGame();
-      }, 1000);
+      this.world.endGame();
     }
 
     this._money = changeset.money;
@@ -353,14 +508,16 @@ export class Player extends ScreenObject implements IPlayer {
         }
       });
     } else {
-      this._inventory.filter(item => config.INVENTORY_ITEM_BONUS.includes(item.type)).forEach((item) => {
-        const updatedItem = changeset.inventory.find(
-          (newItem) => newItem.type === item.type
-        );
-        if (!updatedItem || updatedItem.quantity < item.quantity) {
+      this._inventory
+        .filter((item) => config.INVENTORY_ITEM_BONUS.includes(item.type))
+        .forEach((item) => {
+          const updatedItem = changeset.inventory.find(
+            (newItem) => newItem.type === item.type
+          );
+          if (!updatedItem || updatedItem.quantity < item.quantity) {
             AudioManager.getInstance().playSound(config.SOUNDS.BONUS_PICKUP);
-        }
-      });
+          }
+        });
     }
 
     this._inventory = changeset.inventory;

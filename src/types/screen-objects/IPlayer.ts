@@ -24,15 +24,17 @@ export interface IPlayer
   drawUI(ctx: CanvasRenderingContext2D): void;
   rotation: number;
   money: number;
+  score: number;
   kills: number;
   bulletsLeft: number;
   selectedGunType: WeaponType;
   inventory: InventoryItemMessage[];
   hasInventoryItem(itemType: InventoryItemID): boolean;
+  toggleInventory(): void;
   applyFromGameState(changeset: PlayerMessage): void;
 }
 
 export interface IPlayerFactory {
   new (world: IWorld, point: IPoint, rotation: number, id: string): IPlayer;
-  createFromSessionPlayer(world: IWorld, player: SessionPlayer): IPlayer;
+  fromGameState(world: IWorld, player: PlayerMessage): IPlayer;
 }

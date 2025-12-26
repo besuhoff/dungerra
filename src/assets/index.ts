@@ -20,6 +20,7 @@ import itemAmmoRocketLauncherTexture from "./item-ammo-rocket-launcher.png";
 import itemAmmoRailgunTexture from "./item-ammo-railgun.png";
 import bulletRocketTexture from "./bullet-rocket.png";
 import shopLayoutTexture from "./shop-layout.png";
+import chestTexture from "./chest.png";
 
 import explosionAnimation from "./explosion-animation.png";
 
@@ -63,6 +64,7 @@ export const Assets = {
   itemAmmoRailgunTexture,
   bulletRocketTexture,
   shopLayoutTexture,
+  chestTexture,
 
   explosionAnimation: {
     image: explosionAnimation,
