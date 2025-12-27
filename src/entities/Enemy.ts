@@ -86,7 +86,7 @@ export class Enemy extends ScreenObject implements IEnemy {
       const players = [
         currentPlayer,
         ...this.world.otherPlayers.filter(
-          (p) => p.isAlive() && !p.hasNightVision
+          (p) => p.isAlive() && !p.hasNightVision()
         ),
       ];
       for (const player of players) {

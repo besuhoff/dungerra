@@ -297,12 +297,12 @@ export class World implements IWorld {
     // Draw enemies
     this._enemies.forEach((enemy) => enemy.draw(ctx, uiCtx));
 
-    // Draw bonuses
-    this._bonuses.forEach((bonus) => bonus.draw(ctx, uiCtx));
-
     Object.values(this._otherPlayers).forEach((otherPlayer) => {
       otherPlayer.draw(ctx, uiCtx);
     });
+
+    // Draw bonuses
+    this._bonuses.forEach((bonus) => bonus.draw(ctx, uiCtx));
 
     // Draw player
     if (this._player) {
