@@ -1,15 +1,12 @@
 import { ScreenObject } from "./ScreenObject";
 import * as config from "../config";
 import { IEnemy } from "../types/screen-objects/IEnemy";
-import { IBullet } from "../types/screen-objects/IBullet";
 import { IWall } from "../types/screen-objects/IWall";
 import { IPoint } from "../types/geometry/IPoint";
 import { IWorld } from "../types/IWorld";
 import { loadImage } from "../utils/loadImage";
 import { Point2D } from "../utils/geometry/Point2D";
-import { lineIntersectsRect } from "../utils/lineIntersectsRect";
 import { AudioManager } from "../utils/AudioManager";
-import { Bullet } from "./Bullet";
 import { Enemy as EnemyMessage } from "../types/socketEvents";
 
 export class Enemy extends ScreenObject implements IEnemy {
@@ -17,7 +14,6 @@ export class Enemy extends ScreenObject implements IEnemy {
   private bloodImage: HTMLImageElement | null = null;
   private dead: boolean = false;
   private _lives = config.ENEMY_LIVES;
-  private _bullets: IBullet[] = [];
   private _rotation: number = 0;
 
   get lives(): number {
@@ -67,9 +63,9 @@ export class Enemy extends ScreenObject implements IEnemy {
   }
 
   draw(ctx: CanvasRenderingContext2D, uiCtx: CanvasRenderingContext2D): void {
-    this._bullets.forEach((bullet) => {
-      bullet.draw(ctx, uiCtx);
-    });
+    if (this.world.gameOver) {
+      return;
+    }
 
     const currentPlayer = this.world.player;
 
@@ -78,9 +74,7 @@ export class Enemy extends ScreenObject implements IEnemy {
     }
 
     let shouldDraw = false;
-    if (this.world.gameOver) {
-      shouldDraw = false;
-    } else if (currentPlayer.isAlive() && currentPlayer.hasNightVision()) {
+    if (currentPlayer.isAlive() && currentPlayer.hasNightVision()) {
       shouldDraw = true;
     } else {
       const players = [

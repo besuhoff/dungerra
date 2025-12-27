@@ -1,7 +1,6 @@
 import { ScreenObject } from "./ScreenObject";
 import * as config from "../config";
 import { IPlayer } from "../types/screen-objects/IPlayer";
-import { IBullet } from "../types/screen-objects/IBullet";
 import { IPoint } from "../types/geometry/IPoint";
 import { IWorld } from "../types/IWorld";
 import { loadImage } from "../utils/loadImage";
@@ -16,7 +15,6 @@ import { Point2D } from "../utils/geometry/Point2D";
 export class Player extends ScreenObject implements IPlayer {
   private _nightVisionTimer: number = 0;
   private _rotation: number = 0;
-  private _bullets: IBullet[] = [];
   private _bulletsLeft: number = config.PLAYER_MAX_BULLETS;
   private _kills: number = 0;
   private _money: number = 0;
@@ -183,9 +181,9 @@ export class Player extends ScreenObject implements IPlayer {
   }
 
   draw(ctx: CanvasRenderingContext2D, uiCtx: CanvasRenderingContext2D): void {
-    this._bullets.forEach((bullet) => {
-      bullet.draw(ctx, uiCtx);
-    });
+    if (this.world.gameOver) {
+      return;
+    }
 
     if (!this._images[this._selectedGunType] || !this._imageDead) {
       return;
@@ -203,7 +201,7 @@ export class Player extends ScreenObject implements IPlayer {
 
     ctx.translate(screenPoint.x, screenPoint.y);
 
-    if ((this._invulnerableTimer <= 0 || shouldBlink) && !this.world.gameOver) {
+    if (this._invulnerableTimer <= 0 || shouldBlink) {
       const image = this.isAlive()
         ? this._images[this._selectedGunType]!
         : this._imageDead;

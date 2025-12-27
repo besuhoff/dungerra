@@ -52,7 +52,7 @@ export class Bonus extends ScreenObject implements IBonus {
   }
 
   draw(ctx: CanvasRenderingContext2D): void {
-    if (!this.image || !this.world.player) {
+    if (!this.image || !this.world.player || this.world.gameOver) {
       return;
     }
 
