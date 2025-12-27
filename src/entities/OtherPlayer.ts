@@ -247,8 +247,7 @@ export class OtherPlayer extends ScreenObject implements IOtherPlayer {
   }
 
   hasNightVision(): boolean {
-    // TODO: implement if needed
-    return false;
+    return this._nightVisionTimer > 0;
   }
 
   isNightVisionFading(): boolean {
