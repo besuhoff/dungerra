@@ -107,8 +107,9 @@ export class Bullet extends ScreenObject implements IBullet {
     millisecondsPassed?: number
   ): void {
     if (
-      !this._active &&
-      !["railgun", "rocket_launcher"].includes(this._weaponType)
+      this.world.gameOver ||
+      (!this._active &&
+        !["railgun", "rocket_launcher"].includes(this._weaponType))
     ) {
       return;
     }

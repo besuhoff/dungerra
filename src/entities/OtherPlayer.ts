@@ -1,10 +1,8 @@
 import { ScreenObject } from "./ScreenObject";
 import * as config from "../config";
-import { IBullet } from "../types/screen-objects/IBullet";
 import { IPoint } from "../types/geometry/IPoint";
 import { IWorld } from "../types/IWorld";
 import { loadImage } from "../utils/loadImage";
-import { AudioManager } from "../utils/AudioManager";
 import { IOtherPlayer } from "../types/screen-objects/IOtherPlayer";
 import { Point2D } from "../utils/geometry/Point2D";
 import { Player as PlayerMessage } from "../types/socketEvents";
@@ -19,7 +17,6 @@ export class OtherPlayer extends ScreenObject implements IOtherPlayer {
   private _bloodImage: HTMLImageElement | null = null;
 
   private _rotation: number = 0;
-  private _bullets: IBullet[] = [];
 
   private _invulnerableTimer: number = 0;
   private _lives: number = config.PLAYER_LIVES;
@@ -97,10 +94,6 @@ export class OtherPlayer extends ScreenObject implements IOtherPlayer {
   }
 
   draw(ctx: CanvasRenderingContext2D, uiCtx: CanvasRenderingContext2D): void {
-    this._bullets.forEach((bullet) => {
-      bullet.draw(ctx, uiCtx);
-    });
-
     if (
       !this._images[this._weaponType] ||
       !this.world.player ||

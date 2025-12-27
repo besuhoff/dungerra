@@ -70,7 +70,7 @@ export class Shop extends ScreenObject implements IShop {
   }
 
   draw(ctx: CanvasRenderingContext2D, uiCtx: CanvasRenderingContext2D): void {
-    if (!this._image || !this.world.player) {
+    if (!this._image || !this.world.player || this.world.gameOver) {
       return;
     }
 
