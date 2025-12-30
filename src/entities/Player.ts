@@ -8,6 +8,7 @@ import { AudioManager } from "../utils/AudioManager";
 import {
   InventoryItem as InventoryItemMessage,
   Player as PlayerMessage,
+  PlayerUpdate,
 } from "../types/socketEvents";
 import { SessionPlayer } from "../types/session";
 import { Point2D } from "../utils/geometry/Point2D";
@@ -431,23 +432,40 @@ export class Player extends ScreenObject implements IPlayer {
       playerData.rotation,
       playerData.id
     );
-    player.applyFromGameState(playerData);
+    player._lives = playerData.lives;
+    player._kills = playerData.kills;
+    player._money = playerData.money;
+    player._score = playerData.score;
+    player._selectedGunType = playerData.selectedGunType as config.WeaponType;
+    player._inventory = playerData.inventory;
+    player._bulletsLeft = playerData.bulletsLeftByWeaponType[player._selectedGunType] ?? 0;
+    player._invulnerableTimer = playerData.invulnerableTimer;
+    player._nightVisionTimer = playerData.nightVisionTimer;
+
     return player;
   }
 
-  applyFromGameState(changeset: PlayerMessage): void {
-    this._score = changeset.score;
-
-    if (changeset.position) {
-      this.getPosition().setTo(changeset.position.x, changeset.position.y);
-
-      this._rotation = changeset.rotation;
+  applyFromGameStateDelta(changeset: PlayerUpdate): void {
+    if (changeset.score) {
+      this._score = changeset.score.score;
+      this._money = changeset.score.money;
+      this._kills = changeset.score.kills;
     }
 
-    if (this._lives > changeset.lives) {
-      this.takeDamage(this._lives - changeset.lives);
-    } else if (this._lives < changeset.lives) {
-      this._lives = changeset.lives;
+    if (changeset.position) {
+      this.getPosition().setTo(
+        changeset.position.x,
+        changeset.position.y
+      );
+      this._rotation = changeset.position.rotation;
+    }
+
+    if (changeset.lives) {
+      if (this._lives > changeset.lives.lives) {
+        this.takeDamage(this._lives - changeset.lives.lives);
+      } else if (this._lives < changeset.lives.lives) {
+        this._lives = changeset.lives.lives;
+      }
     }
 
     // Check win/lose conditions
@@ -455,16 +473,18 @@ export class Player extends ScreenObject implements IPlayer {
       this.world.endGame();
     }
 
-    this._money = changeset.money;
-    this._kills = changeset.kills;
+    const newGunType =
+      (changeset.inventory?.selectedGunType as config.WeaponType) ??
+      this._selectedGunType;
 
     if (
-      changeset.selectedGunType === this._selectedGunType &&
+      newGunType === this._selectedGunType &&
       !config.WEAPON_TYPES_LOADED_DIRECTLY_FROM_INVENTORY.includes(
-        changeset.selectedGunType as config.WeaponType
+        this._selectedGunType
       ) &&
+      changeset.playerBullets &&
       this._bulletsLeft <
-        changeset.bulletsLeftByWeaponType[changeset.selectedGunType]
+        changeset.playerBullets.bulletsLeftByWeaponType[this._selectedGunType]
     ) {
       AudioManager.getInstance().playSound(
         config.SOUNDS.PLAYER_BULLET_RECHARGE,
@@ -472,51 +492,54 @@ export class Player extends ScreenObject implements IPlayer {
       );
     }
 
+    const newInventory = changeset.inventory?.inventory ?? this._inventory;
+
     if (
-      config.WEAPON_TYPES_LOADED_DIRECTLY_FROM_INVENTORY.includes(
-        changeset.selectedGunType as config.WeaponType
-      )
+      config.WEAPON_TYPES_LOADED_DIRECTLY_FROM_INVENTORY.includes(newGunType)
     ) {
       const inventoryItemId =
-        config.AMMO_INVENTORY_ID_BY_WEAPON_TYPE[
-          changeset.selectedGunType as keyof typeof config.AMMO_INVENTORY_ID_BY_WEAPON_TYPE
-        ];
-      const inventoryItem = changeset.inventory.find(
+        config.AMMO_INVENTORY_ID_BY_WEAPON_TYPE[newGunType];
+      const inventoryItem = newInventory.find(
         (item) => item.type === inventoryItemId
       );
       this._bulletsLeft = inventoryItem?.quantity ?? 0;
-    } else {
+    } else if (changeset.playerBullets) {
       this._bulletsLeft =
-        changeset.bulletsLeftByWeaponType[changeset.selectedGunType] ?? 0;
+        changeset.playerBullets.bulletsLeftByWeaponType[newGunType] ?? 0;
     }
 
-    this._selectedGunType = changeset.selectedGunType as config.WeaponType;
-    this._invulnerableTimer = changeset.invulnerableTimer;
-    this._nightVisionTimer = changeset.nightVisionTimer;
+    this._selectedGunType = newGunType;
 
-    if (this.world.isPlayerInShop()) {
-      changeset.inventory.forEach((item) => {
-        const existingItem = this._inventory.find(
-          (invItem) => invItem.type === item.type
-        );
+    if (changeset.timers) {
+      this._invulnerableTimer = changeset.timers.invulnerableTimer;
+      this._nightVisionTimer = changeset.timers.nightVisionTimer;
+    }
 
-        if (!existingItem || item.quantity > existingItem.quantity) {
-          AudioManager.getInstance().playSound(config.SOUNDS.MONEY_SPENT);
-        }
-      });
-    } else {
-      this._inventory
-        .filter((item) => config.INVENTORY_ITEM_BONUS.includes(item.type))
-        .forEach((item) => {
-          const updatedItem = changeset.inventory.find(
-            (newItem) => newItem.type === item.type
+    if (changeset.inventory) {
+      if (this.world.isPlayerInShop()) {
+        changeset.inventory.inventory.forEach((item) => {
+          const existingItem = this._inventory.find(
+            (invItem) => invItem.type === item.type
           );
-          if (!updatedItem || updatedItem.quantity < item.quantity) {
-            AudioManager.getInstance().playSound(config.SOUNDS.BONUS_PICKUP);
+
+          if (!existingItem || item.quantity > existingItem.quantity) {
+            AudioManager.getInstance().playSound(config.SOUNDS.MONEY_SPENT);
           }
         });
-    }
+      } else {
+        this._inventory
+          .filter((item) => config.INVENTORY_ITEM_BONUS.includes(item.type))
+          .forEach((item) => {
+            const updatedItem = changeset.inventory!.inventory.find(
+              (newItem) => newItem.type === item.type
+            );
+            if (!updatedItem || updatedItem.quantity < item.quantity) {
+              AudioManager.getInstance().playSound(config.SOUNDS.BONUS_PICKUP);
+            }
+          });
+      }
 
-    this._inventory = changeset.inventory;
+      this._inventory = changeset.inventory.inventory;
+    }
   }
 }

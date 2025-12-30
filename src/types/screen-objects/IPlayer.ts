@@ -4,6 +4,7 @@ import { IWorld } from "../IWorld";
 import {
   InventoryItem as InventoryItemMessage,
   Player as PlayerMessage,
+  PlayerUpdate,
 } from "../socketEvents";
 import { IDamageable } from "./IDamageable";
 import { IDrawable } from "./IDrawable";
@@ -30,7 +31,7 @@ export interface IPlayer
   inventory: InventoryItemMessage[];
   hasInventoryItem(itemType: InventoryItemID): boolean;
   toggleInventory(): void;
-  applyFromGameState(changeset: PlayerMessage): void;
+  applyFromGameStateDelta(changeset: PlayerUpdate): void;
 }
 
 export interface IPlayerFactory {

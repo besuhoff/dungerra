@@ -18,10 +18,7 @@ import {
   IOtherPlayer,
   IOtherPlayerFactory,
 } from "../types/screen-objects/IOtherPlayer";
-import {
-  InputMessage,
-  GameStateDeltaMessage,
-} from "../types/socketEvents";
+import { InputMessage, GameStateDeltaMessage } from "../types/socketEvents";
 import {
   IBulletManager,
   IBulletManagerFactory,
@@ -157,16 +154,9 @@ export class World implements IWorld {
 
   addOtherPlayer(player: PlayerMessage): void {
     const point = new Point2D(player.position!.x, player.position!.y);
-    const otherPlayer = new this._OtherPlayer(
-      this,
-      point,
-      player.rotation,
-      player.id,
-      player.username
-    );
+    const otherPlayer = new this._OtherPlayer(this, player);
 
     this._otherPlayers[player.id] = otherPlayer;
-    otherPlayer.applyFromGameState(player);
   }
 
   removeOtherPlayer(playerId: string): void {
@@ -721,46 +711,53 @@ export class World implements IWorld {
     this._lastChangesetTimestamp = Number(changeset.timestamp);
     const hadNoBullets = this._player ? this._player.bulletsLeft === 0 : false;
 
-    for (const updatedPlayer of Object.values(changeset.updatedPlayers)) {
-      if (updatedPlayer.id === currentPlayerId) {
-        if (!this._player) {
-          this._player = this._Player.fromGameState(this, updatedPlayer);
-          continue;
-        }
+    for (const addedPlayer of Object.values(changeset.addedPlayers)) {
+      if (addedPlayer.id === currentPlayerId) {
+        this._player = this._Player.fromGameState(this, addedPlayer);
+        continue;
+      }
 
-        if (updatedPlayer.isAlive && !this._player.isAlive()) {
+      if (!this._otherPlayers[addedPlayer.id]) {
+        this.addOtherPlayer(addedPlayer);
+      }
+    }
+
+    for (const [updatedPlayerId, updatedPlayer] of Object.entries(
+      changeset.updatedPlayers
+    )) {
+      if (updatedPlayerId === currentPlayerId) {
+        if (updatedPlayer.lives?.isAlive && !this._player?.isAlive()) {
           const audioManager = AudioManager.getInstance();
           audioManager.playSound(config.SOUNDS.SPAWN);
           audioManager.stopSound(config.SOUNDS.GAME_OVER);
           this._gameOver = false;
         }
-        this._player.applyFromGameState(updatedPlayer);
+
+        this._player?.applyFromGameStateDelta(updatedPlayer);
         continue;
       }
 
-      if (!this._otherPlayers[updatedPlayer.id]) {
-        this.addOtherPlayer(updatedPlayer);
-        continue;
+      const otherPlayer = this._otherPlayers[updatedPlayerId];
+      if (otherPlayer) {
+        otherPlayer.applyFromGameStateDelta(updatedPlayer);
       }
-
-      this._otherPlayers[updatedPlayer.id].applyFromGameState(updatedPlayer);
     }
 
     for (const removedPlayerId of changeset.removedPlayers) {
       this.removeOtherPlayer(removedPlayerId);
     }
 
-    for (const updatedWall of Object.values(changeset.updatedWalls)) {
-      const wall = this._walls.find((w) => w.id === updatedWall.id);
+    for (const addedWall of Object.values(changeset.addedWalls)) {
+      const wall = this._walls.find((w) => w.id === addedWall.id);
       if (!wall) {
         this._walls.push(
           new this._Wall(
             this,
-            new Point2D(updatedWall.position!.x, updatedWall.position!.y),
-            updatedWall.width,
-            updatedWall.height,
-            updatedWall.orientation as "horizontal" | "vertical",
-            updatedWall.id
+            new Point2D(addedWall.position!.x, addedWall.position!.y),
+            addedWall.width,
+            addedWall.height,
+            addedWall.orientation as "horizontal" | "vertical",
+            addedWall.id
           )
         );
       }
@@ -770,23 +767,28 @@ export class World implements IWorld {
       this._walls = this._walls.filter((w) => w.id !== removedWallId);
     }
 
-    for (const updatedEnemy of Object.values(changeset.updatedEnemies)) {
-      let enemy = this._enemies.find((e) => e.id === updatedEnemy.id);
-      if (!enemy) {
-        const wall = this._walls.find(
-          (wall) => wall.id === updatedEnemy.wallId
+    for (const addedEnemy of Object.values(changeset.addedEnemies)) {
+      let enemy = this._enemies.find((e) => e.id === addedEnemy.id);
+      const wall = this._walls.find((wall) => wall.id === addedEnemy.wallId);
+      if (!wall) {
+        console.log(
+          `Error: Wall ${addedEnemy.wallId} is undefined for Enemy ${addedEnemy.id}`
         );
-        if (!wall) {
-          console.log(
-            `Error: Wall ${updatedEnemy.wallId} is undefined for Enemy ${updatedEnemy.id}`
-          );
-          continue;
-        }
+        continue;
+      }
 
-        enemy = new this._Enemy(this, wall!, updatedEnemy);
-        this._enemies.push(enemy);
-      } else {
-        enemy.applyFromGameState(updatedEnemy);
+      enemy = new this._Enemy(this, wall!, addedEnemy);
+      this._enemies = this._enemies
+        .filter((e) => e.id !== addedEnemy.id)
+        .concat([enemy]);
+    }
+
+    for (const [updatedEnemyId, updatedEnemy] of Object.entries(
+      changeset.updatedEnemies
+    )) {
+      const enemy = this._enemies.find((e) => e.id === updatedEnemyId);
+      if (enemy) {
+        enemy.applyFromGameStateDelta(updatedEnemy);
       }
     }
 
@@ -794,24 +796,29 @@ export class World implements IWorld {
       this._enemies = this._enemies.filter((e) => e.id !== removedEnemyId);
     }
 
-    for (const updatedBonus of Object.values(changeset.updatedBonuses)) {
-      if (updatedBonus.pickedUpBy) {
-        this._bonuses = this._bonuses.filter((b) => b.id !== updatedBonus.id);
-        if (
-          updatedBonus.pickedUpBy === this._player?.id &&
-          !this._bonusPickupCache.has(updatedBonus.id)
-        ) {
-          AudioManager.getInstance().playSound(config.SOUNDS.BONUS_PICKUP);
-          this._bonusPickupCache.add(updatedBonus.id);
-        }
-
+    for (const addedBonus of Object.values(changeset.addedBonuses)) {
+      if (addedBonus.pickedUpBy) {
         continue;
       }
 
-      const bonus = this._bonuses.find((b) => b.id === updatedBonus.id);
+      const bonus = this._bonuses.find((b) => b.id === addedBonus.id);
       if (!bonus) {
-        this._bonuses.push(new this._Bonus(this, updatedBonus));
-        continue;
+        this._bonuses.push(new this._Bonus(this, addedBonus));
+      }
+    }
+
+    for (const [updatedBonusId, updatedBonus] of Object.entries(
+      changeset.updatedBonuses
+    )) {
+      if (updatedBonus.pickedUpBy) {
+        this._bonuses = this._bonuses.filter((b) => b.id !== updatedBonusId);
+        if (
+          updatedBonus.pickedUpBy === this._player?.id &&
+          !this._bonusPickupCache.has(updatedBonusId)
+        ) {
+          AudioManager.getInstance().playSound(config.SOUNDS.BONUS_PICKUP);
+          this._bonusPickupCache.add(updatedBonusId);
+        }
       }
     }
 
@@ -819,22 +826,14 @@ export class World implements IWorld {
       this._bonuses = this._bonuses.filter((b) => b.id !== removedBonusId);
     }
 
-    for (const bulletData of Object.values(changeset.updatedBullets)) {
-      const existingBullet = this._bulletManager.getBulletById(bulletData.id);
-      if (existingBullet) {
-        existingBullet
-          .getPosition()
-          .setTo(bulletData.position!.x, bulletData.position!.y);
-        continue;
-      }
-
+    for (const addedBullet of Object.values(changeset.addedBullets)) {
       if (
-        bulletData.ownerId === this._player?.id &&
+        addedBullet.ownerId === this._player?.id &&
         hadNoBullets &&
         this._player.bulletsLeft === 0 &&
-        !this._bulletManager.hasSoundPlayedForBullet(bulletData) &&
+        !this._bulletManager.hasSoundPlayedForBullet(addedBullet) &&
         !config.WEAPON_TYPES_LOADED_DIRECTLY_FROM_INVENTORY.includes(
-          bulletData.weaponType as config.WeaponType
+          addedBullet.weaponType as config.WeaponType
         )
       ) {
         // Player has just recharged their bullets
@@ -844,7 +843,16 @@ export class World implements IWorld {
         );
       }
 
-      this._bulletManager.applyFromGameState(bulletData);
+      this._bulletManager.applyFromGameState(addedBullet);
+    }
+
+    for (const [bulletId, bulletData] of Object.entries(
+      changeset.updatedBullets
+    )) {
+      const existingBullet = this._bulletManager.getBulletById(bulletId);
+      if (existingBullet) {
+        existingBullet.getPosition().setTo(bulletData.x, bulletData.y);
+      }
     }
 
     for (const bulletData of Object.values(changeset.removedBullets)) {
@@ -870,12 +878,19 @@ export class World implements IWorld {
       this._bulletManager.applyFromGameState(bulletData, true);
     }
 
-    for (const shopData of Object.values(changeset.updatedShops)) {
-      const shop = this._shops.find((s) => s.id === shopData.id);
+    for (const addedShopData of Object.values(changeset.addedShops)) {
+      const shop = this._shops.find((s) => s.id === addedShopData.id);
       if (!shop) {
-        this._shops.push(new this._Shop(this, shopData));
-      } else {
-        shop.applyFromGameState(shopData);
+        this._shops.push(new this._Shop(this, addedShopData));
+      }
+    }
+
+    for (const [updatedShopId, updatedShop] of Object.entries(
+      changeset.updatedShops
+    )) {
+      const shop = this._shops.find((s) => s.id === updatedShopId);
+      if (shop) {
+        shop.applyFromGameStateDelta(updatedShop);
       }
     }
 

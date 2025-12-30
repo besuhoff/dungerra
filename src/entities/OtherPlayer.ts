@@ -5,7 +5,7 @@ import { IWorld } from "../types/IWorld";
 import { loadImage } from "../utils/loadImage";
 import { IOtherPlayer } from "../types/screen-objects/IOtherPlayer";
 import { Point2D } from "../utils/geometry/Point2D";
-import { Player as PlayerMessage } from "../types/socketEvents";
+import { Player as PlayerMessage, PlayerUpdate } from "../types/socketEvents";
 
 export class OtherPlayer extends ScreenObject implements IOtherPlayer {
   private _images: Record<config.WeaponType, HTMLImageElement | null> = {
@@ -17,6 +17,7 @@ export class OtherPlayer extends ScreenObject implements IOtherPlayer {
   private _bloodImage: HTMLImageElement | null = null;
 
   private _rotation: number = 0;
+  private _name: string;
 
   private _invulnerableTimer: number = 0;
   private _lives: number = config.PLAYER_LIVES;
@@ -39,13 +40,18 @@ export class OtherPlayer extends ScreenObject implements IOtherPlayer {
 
   constructor(
     private world: IWorld,
-    point: IPoint,
-    rotation: number,
-    id: string,
-    private _name: string
+    playerData: PlayerMessage
   ) {
+    const point = new Point2D(
+      playerData.position!.x,
+      playerData.position!.y
+    );
+    const rotation = playerData.rotation;
+    const id = playerData.id;
+
     super(point, config.PLAYER_SIZE, config.PLAYER_SIZE, id);
 
+    this._name = playerData.username;
     this._rotation = rotation;
 
     // Load player sprite
@@ -256,13 +262,21 @@ export class OtherPlayer extends ScreenObject implements IOtherPlayer {
       .rotateAroundPointCoordinates(this.getPosition(), this._rotation);
   }
 
-  applyFromGameState(player: PlayerMessage): void {
-    this._point.setTo(player.position!.x, player.position!.y);
-    this._rotation = player.rotation;
-    this._lives = player.lives;
-    this.dead = !player.isAlive;
-    this._invulnerableTimer = player.invulnerableTimer;
-    this._nightVisionTimer = player.nightVisionTimer;
-    this._weaponType = player.selectedGunType as config.WeaponType;
+  applyFromGameStateDelta(playerDelta: PlayerUpdate): void {
+    if (playerDelta.position) {
+      this._point.setTo(playerDelta.position.x, playerDelta.position.y);
+      this._rotation = playerDelta.position.rotation;
+    }
+    if (playerDelta.lives) {
+      this._lives = playerDelta.lives.lives;
+      this.dead = !playerDelta.lives.isAlive;
+    }
+    if (playerDelta.timers) {
+      this._invulnerableTimer = playerDelta.timers.invulnerableTimer;
+      this._nightVisionTimer = playerDelta.timers.nightVisionTimer;
+    }
+    if (playerDelta.inventory) {
+      this._weaponType = playerDelta.inventory.selectedGunType as config.WeaponType;
+    }
   }
 }
