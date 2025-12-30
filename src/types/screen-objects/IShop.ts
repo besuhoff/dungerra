@@ -1,6 +1,6 @@
 import { IDrawable } from "./IDrawable";
 import { IScreenObject } from "./IScreenObject";
-import { Shop as ShopMessage } from "../../types/socketEvents";
+import { Shop as ShopMessage, ShopUpdate } from "../../types/socketEvents";
 import { IWorld } from "../IWorld";
 
 export interface IShop extends IScreenObject, IDrawable {
@@ -12,7 +12,7 @@ export interface IShop extends IScreenObject, IDrawable {
   closeModal(): void;
   isModalOpen: boolean;
   inventory: ShopMessage["inventory"];
-  applyFromGameState(shopData: ShopMessage): void;
+  applyFromGameStateDelta(shopData: ShopUpdate): void;
 }
 
 export interface IShopFactory {

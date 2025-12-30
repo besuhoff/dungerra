@@ -1,7 +1,11 @@
 import { IWorld } from "../types/IWorld";
 import { IShop } from "../types/screen-objects/IShop";
 import { loadImage } from "../utils/loadImage";
-import { Shop as ShopMessage, ShopItem } from "../types/socketEvents";
+import {
+  Shop as ShopMessage,
+  ShopItem,
+  ShopUpdate,
+} from "../types/socketEvents";
 import { Point2D } from "../utils/geometry/Point2D";
 import { ScreenObject } from "./ScreenObject";
 import * as config from "../config";
@@ -333,7 +337,7 @@ export class Shop extends ScreenObject implements IShop {
     }
   }
 
-  applyFromGameState(shopData: ShopMessage): void {
+  applyFromGameStateDelta(shopData: ShopUpdate): void {
     this._inventory = shopData.inventory || {};
   }
 }

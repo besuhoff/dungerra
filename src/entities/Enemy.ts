@@ -7,7 +7,7 @@ import { IWorld } from "../types/IWorld";
 import { loadImage } from "../utils/loadImage";
 import { Point2D } from "../utils/geometry/Point2D";
 import { AudioManager } from "../utils/AudioManager";
-import { Enemy as EnemyMessage } from "../types/socketEvents";
+import { Enemy as EnemyMessage, EnemyUpdate } from "../types/socketEvents";
 
 export class Enemy extends ScreenObject implements IEnemy {
   private image: HTMLImageElement | null = null;
@@ -37,7 +37,7 @@ export class Enemy extends ScreenObject implements IEnemy {
     super(new Point2D(position.x, position.y), size, size, enemyData.id);
     this._rotation = enemyData.rotation;
     this._lives = enemyData.lives;
-    this.dead = enemyData.isDead;
+    this.dead = !enemyData.isAlive;
 
     // Load enemy sprite
     loadImage(config.TEXTURES.ENEMY).then((img) => {
@@ -169,22 +169,29 @@ export class Enemy extends ScreenObject implements IEnemy {
     return false;
   }
 
-  applyFromGameState(enemy: EnemyMessage): void {
-    this._point.setTo(enemy.position!.x, enemy.position!.y);
-    this._rotation = enemy.rotation;
-
-    if (enemy.lives < this._lives) {
-      const distance = this.getPosition().distanceTo(
-        this.world.player!.getPosition()
+  applyFromGameStateDelta(enemyDelta: EnemyUpdate): void {
+    if (enemyDelta.position) {
+      this._point.setTo(
+        enemyDelta.position.x,
+        enemyDelta.position.y
       );
-      const maxDistance = this.world.torchRadius * 2;
-      const volume = distance >= maxDistance ? 0 : 1 - distance / maxDistance;
-
-      const audioManager = AudioManager.getInstance();
-      audioManager.playSound(config.SOUNDS.ENEMY_HURT, { volume });
+      this._rotation = enemyDelta.position.rotation;
     }
 
-    this._lives = enemy.lives;
-    this.dead = enemy.isDead;
+    if (enemyDelta.lives) {
+      if (enemyDelta.lives.lives < this._lives) {
+        const distance = this.getPosition().distanceTo(
+          this.world.player!.getPosition()
+        );
+        const maxDistance = this.world.torchRadius * 2;
+        const volume = distance >= maxDistance ? 0 : 1 - distance / maxDistance;
+
+        const audioManager = AudioManager.getInstance();
+        audioManager.playSound(config.SOUNDS.ENEMY_HURT, { volume });
+      }
+
+      this._lives = enemyDelta.lives.lives;
+      this.dead = !enemyDelta.lives.isAlive;
+    }
   }
 }
