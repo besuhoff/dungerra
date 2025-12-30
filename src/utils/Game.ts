@@ -98,16 +98,10 @@ export class Game {
     window.addEventListener("mousemove", (e) => this.handleMouseMove(e));
     window.addEventListener("mousedown", (e) => this.handleMouseDown(e));
 
-    this._sessionManager.onGameState((changeset) => {
-      if (this._world) {
-        const userData = this._authManager.getUserData();
-        this._world.applyGameState(changeset, userData!.id);
-      }
-    });
-
     this._sessionManager.onGameStateDelta((changeset) => {
       if (this._world) {
-        this._world.applyGameStateDelta(changeset);
+        const userData = this._authManager.getUserData();
+        this._world.applyGameStateDelta(changeset, userData!.id);
       }
     });
 

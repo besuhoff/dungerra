@@ -1,7 +1,6 @@
 import { WeaponType, InventoryItemID } from "../../config";
 import { IPoint } from "../geometry/IPoint";
 import { IWorld } from "../IWorld";
-import { SessionPlayer } from "../session";
 import {
   InventoryItem as InventoryItemMessage,
   Player as PlayerMessage,

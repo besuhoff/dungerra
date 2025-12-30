@@ -1,9 +1,7 @@
 import * as config from "../config";
 import { AuthManager } from "./AuthManager";
 import {
-  GameStateMessage,
   GameStateDeltaMessage,
-  MessageType,
   GameMessage,
   PlayerJoinMessage,
   PlayerLeaveMessage,
@@ -12,8 +10,6 @@ import {
 export class SocketService {
   private static instance: SocketService;
   private socket: WebSocket | null = null;
-  private _gameStateHandler: ((changeset: GameStateMessage) => void) | null =
-    null;
   private _gameStateDeltaHandler:
     | ((changeset: GameStateDeltaMessage) => void)
     | null = null;
@@ -142,10 +138,6 @@ export class SocketService {
 
   private handleMessage({ payload }: GameMessage): void {
     switch (payload.oneofKind) {
-      case "gameState":
-        this._gameStateHandler?.(payload.gameState);
-        break;
-
       case "gameStateDelta":
         this._gameStateDeltaHandler?.(payload.gameStateDelta);
         break;
@@ -161,10 +153,6 @@ export class SocketService {
       default:
         console.warn("Unknown WebSocket event:", payload.oneofKind);
     }
-  }
-
-  public onGameState(callback: (changeset: GameStateMessage) => void): void {
-    this._gameStateHandler = callback;
   }
 
   public onGameStateDelta(

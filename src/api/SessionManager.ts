@@ -1,13 +1,7 @@
-import {
-  Session,
-  CreateSessionRequest,
-  AddSessionChunksRequest,
-  SessionChunk,
-} from "../types/session";
+import { Session, CreateSessionRequest } from "../types/session";
 import { HttpClient } from "./HttpClient";
 import { SocketService } from "./SocketService";
 import {
-  GameStateMessage,
   GameStateDeltaMessage,
   InputMessage,
   MessageType,
@@ -15,7 +9,6 @@ import {
   PlayerJoinMessage,
   PlayerRespawnMessage,
 } from "../types/socketEvents";
-import { IPlayer } from "../types/screen-objects/IPlayer";
 
 export class SessionManager {
   private static instance: SessionManager;
@@ -71,42 +64,6 @@ export class SessionManager {
     }
   }
 
-  public async addSessionChunks(
-    request: AddSessionChunksRequest
-  ): Promise<Session> {
-    if (!this.currentSession) {
-      throw new Error("No active session");
-    }
-
-    // const session = await HttpClient.post<Session>(
-    //   `/sessions/${this.currentSession.id}/chunks`,
-    //   request
-    // );
-
-    // this.currentSession = session;
-    // return session;
-    return this.currentSession;
-  }
-
-  public async updateSessionChunk(chunk: SessionChunk): Promise<Session> {
-    return this.addSessionChunks({
-      chunks: [chunk],
-    });
-  }
-
-  public async fetchSessionChunks(): Promise<Session> {
-    if (!this.currentSession) {
-      throw new Error("No active session");
-    }
-
-    const session = await HttpClient.get<Session>(
-      `/sessions/${this.currentSession.id}/chunks`
-    );
-
-    this.currentSession = session;
-    return session;
-  }
-
   public getCurrentSession(): Session | null {
     return this.currentSession;
   }
@@ -134,10 +91,6 @@ export class SessionManager {
         input: message,
       },
     });
-  }
-
-  public onGameState(callback: (changeset: GameStateMessage) => void): void {
-    this.socketService.onGameState(callback);
   }
 
   public onGameStateDelta(
