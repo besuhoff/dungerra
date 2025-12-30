@@ -943,6 +943,6 @@ export class World implements IWorld {
   }
 
   isPlayerInShop(): boolean {
-    return this._shops.some((shop) => shop.hasPlayer());
+    return this._shops.some((shop) => shop.hasPlayer() && shop.isModalOpen);
   }
 }
