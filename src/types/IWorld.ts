@@ -1,15 +1,10 @@
 import { IEnemy } from "./screen-objects/IEnemy";
 import { IPlayer } from "./screen-objects/IPlayer";
-import { IBonus, BonusType } from "./screen-objects/IBonus";
+import { IBonus } from "./screen-objects/IBonus";
 import { IWall } from "./screen-objects/IWall";
 import { IPoint } from "./geometry/IPoint";
 import { IOtherPlayer } from "./screen-objects/IOtherPlayer";
-import {
-  GameStateDeltaMessage,
-  GameStateMessage,
-  Player as PlayerMessage,
-} from "./socketEvents";
-import { SessionPlayer } from "./session";
+import { GameStateDeltaMessage, Player as PlayerMessage } from "./socketEvents";
 import { IShop } from "./screen-objects/IShop";
 import { InventoryItemID } from "../config";
 
@@ -41,7 +36,9 @@ export interface IWorld {
   worldToScreenCoordinates(point: IPoint): IPoint;
   addOtherPlayer(player: PlayerMessage): void;
   removeOtherPlayer(playerId: string): void;
-  applyGameState(delta: GameStateMessage, currentPlayerId: string): void;
-  applyGameStateDelta(changeset: GameStateDeltaMessage): void;
+  applyGameStateDelta(
+    changeset: GameStateDeltaMessage,
+    currentPlayerId: string
+  ): void;
   getInventoryTexture(type: InventoryItemID): HTMLImageElement | null;
 }

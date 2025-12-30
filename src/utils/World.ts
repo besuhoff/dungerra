@@ -4,7 +4,6 @@ import { IPlayerFactory } from "../types/screen-objects/IPlayer";
 import { IPlayer } from "../types/screen-objects/IPlayer";
 import { IBonusFactory } from "../types/screen-objects/IBonus";
 import { IBonus } from "../types/screen-objects/IBonus";
-import { BonusType } from "../types/screen-objects/IBonus";
 import { IWallFactory } from "../types/screen-objects/IWall";
 import { IWall } from "../types/screen-objects/IWall";
 import { IChunk } from "../types/screen-objects/IChunk";
@@ -22,7 +21,6 @@ import {
 import {
   InputMessage,
   GameStateDeltaMessage,
-  GameStateMessage,
 } from "../types/socketEvents";
 import {
   IBulletManager,
@@ -708,85 +706,10 @@ export class World implements IWorld {
     return this.inventoryItemTextures[type] || null;
   }
 
-  applyGameState(state: GameStateMessage, currentPlayerId: string): void {
-    this._player = this._Player.fromGameState(
-      this,
-      state.players[currentPlayerId]
-    );
-
-    for (const playerData of Object.values(state.players)) {
-      if (playerData.id === this._player.id) {
-        continue;
-      }
-
-      if (!this._otherPlayers[playerData.id]) {
-        this.addOtherPlayer(playerData);
-      }
-    }
-
-    for (const wallData of Object.values(state.walls)) {
-      const wall = this._walls.find((w) => w.id === wallData.id);
-      if (!wall) {
-        this._walls.push(
-          new this._Wall(
-            this,
-            new Point2D(wallData.position!.x, wallData.position!.y),
-            wallData.width,
-            wallData.height,
-            wallData.orientation as "horizontal" | "vertical",
-            wallData.id
-          )
-        );
-      }
-    }
-
-    for (const enemyData of Object.values(state.enemies)) {
-      const enemy = this._enemies.find((e) => e.id === enemyData.id);
-      if (enemy) {
-        enemy.applyFromGameState(enemyData);
-      } else {
-        this._enemies.push(
-          new this._Enemy(
-            this,
-            this._walls.find((wall) => wall.id === enemyData.wallId)!,
-            enemyData
-          )
-        );
-      }
-    }
-
-    for (const bonusData of Object.values(state.bonuses)) {
-      const bonus = this._bonuses.find((b) => b.id === bonusData.id);
-      if (!bonus) {
-        this._bonuses.push(new this._Bonus(this, bonusData));
-      }
-    }
-
-    for (const shopData of Object.values(state.shops)) {
-      const shop = this._shops.find((s) => s.id === shopData.id);
-      if (!shop) {
-        this._shops.push(new this._Shop(this, shopData));
-      }
-    }
-
-    for (const shopId of state.playersShops) {
-      const shop = this._shops.find((s) => s.id === shopId);
-      if (shop) {
-        shop.handlePlayerEnter();
-      }
-    }
-
-    for (const [id, coordinates] of Object.entries(
-      state.otherPlayerPositions
-    )) {
-      this._otherPlayerCoordinates[id] = new Point2D(
-        coordinates.x,
-        coordinates.y
-      );
-    }
-  }
-
-  applyGameStateDelta(changeset: GameStateDeltaMessage): void {
+  applyGameStateDelta(
+    changeset: GameStateDeltaMessage,
+    currentPlayerId: string
+  ): void {
     if (changeset.timestamp <= this._lastChangesetTimestamp) {
       console.log(
         `Ignoring out-of-order changeset. Last: ${this._lastChangesetTimestamp}, Received: ${changeset.timestamp}`,
@@ -799,7 +722,12 @@ export class World implements IWorld {
     const hadNoBullets = this._player ? this._player.bulletsLeft === 0 : false;
 
     for (const updatedPlayer of Object.values(changeset.updatedPlayers)) {
-      if (updatedPlayer.id === this._player?.id) {
+      if (updatedPlayer.id === currentPlayerId) {
+        if (!this._player) {
+          this._player = this._Player.fromGameState(this, updatedPlayer);
+          continue;
+        }
+
         if (updatedPlayer.isAlive && !this._player.isAlive()) {
           const audioManager = AudioManager.getInstance();
           audioManager.playSound(config.SOUNDS.SPAWN);
