@@ -5,6 +5,7 @@ import playerShotgunTexture from "./player-shotgun.png";
 import playerRailgunTexture from "./player-railgun.png";
 import playerRocketLauncherTexture from "./player-rocket-launcher.png";
 import enemyTexture from "./enemy.png";
+import enemyLieutenantTexture from "./enemy-lieutenant.png";
 import bloodTexture from "./blood-stain.png";
 import aidKitTexture from "./aid-kit.png";
 import gogglesTexture from "./goggles.png";
@@ -49,6 +50,7 @@ export const Assets = {
   playerRailgunTexture,
   playerRocketLauncherTexture,
   enemyTexture,
+  enemyLieutenantTexture,
   bloodTexture,
   aidKitTexture,
   gogglesTexture,

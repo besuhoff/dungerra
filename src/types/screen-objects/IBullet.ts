@@ -21,6 +21,7 @@ export interface IBulletFactory {
     point: IPoint,
     rotation: number,
     isEnemy: boolean,
+    enemyType: config.EnemyType,
     ownerId?: string,
     id?: string
   ): IBullet;

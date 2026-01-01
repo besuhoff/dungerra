@@ -22,7 +22,7 @@ export class SocketService {
   private reconnectDelay: number = 1000;
   private sessionId: string | null = null;
   private messageQueue: GameMessage[] = [];
-  private binaryMode: boolean = true; // = process.env.NODE_ENV === "production";
+  private binaryMode: boolean = process.env.NODE_ENV === "production";
 
   private constructor() {}
 
