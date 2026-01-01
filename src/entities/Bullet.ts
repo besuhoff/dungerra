@@ -42,6 +42,7 @@ export class Bullet extends ScreenObject implements IBullet {
     point: IPoint,
     private rotation: number,
     public readonly isEnemy: boolean,
+    public readonly enemyType: config.EnemyType,
     public readonly ownerId?: string,
     id?: string
   ) {
@@ -78,6 +79,7 @@ export class Bullet extends ScreenObject implements IBullet {
           (180 / Math.PI)
         : 0,
       bulletData.isEnemy,
+      bulletData.enemyType as config.EnemyType,
       bulletData.ownerId,
       bulletData.id
     );
@@ -122,7 +124,8 @@ export class Bullet extends ScreenObject implements IBullet {
     if (this._weaponType === "railgun") {
       // Draw railgun bullet as a line
       ctx.strokeStyle = this.isEnemy
-        ? config.ENEMY_BULLET_COLOR
+        ? (config.BULLET_COLOR_BY_ENEMY_TYPE[this.enemyType] ??
+          config.ENEMY_BULLET_COLOR)
         : config.PLAYER_BULLET_COLOR;
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -212,7 +215,8 @@ export class Bullet extends ScreenObject implements IBullet {
 
     // Draw bullet
     ctx.fillStyle = this.isEnemy
-      ? config.ENEMY_BULLET_COLOR
+      ? (config.BULLET_COLOR_BY_ENEMY_TYPE[this.enemyType] ??
+        config.ENEMY_BULLET_COLOR)
       : config.PLAYER_BULLET_COLOR;
     ctx.beginPath();
     ctx.arc(0, 0, this.width / 2, 0, Math.PI * 2);

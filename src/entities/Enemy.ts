@@ -10,11 +10,13 @@ import { AudioManager } from "../utils/AudioManager";
 import { Enemy as EnemyMessage, EnemyUpdate } from "../types/socketEvents";
 
 export class Enemy extends ScreenObject implements IEnemy {
-  private image: HTMLImageElement | null = null;
+  private imagesByType: Partial<Record<config.EnemyType, HTMLImageElement>> =
+    {};
   private bloodImage: HTMLImageElement | null = null;
   private dead: boolean = false;
   private _lives = config.ENEMY_LIVES;
   private _rotation: number = 0;
+  private _type: config.EnemyType;
 
   get lives(): number {
     return this._lives;
@@ -30,7 +32,6 @@ export class Enemy extends ScreenObject implements IEnemy {
     enemyData: EnemyMessage
   ) {
     const size = config.ENEMY_SIZE;
-    const wallSide = Math.random() < 0.5 ? 1 : -1;
 
     const position = enemyData.position ?? { x: 0, y: 0 };
 
@@ -38,10 +39,15 @@ export class Enemy extends ScreenObject implements IEnemy {
     this._rotation = enemyData.rotation;
     this._lives = enemyData.lives;
     this.dead = !enemyData.isAlive;
+    this._type = enemyData.type as config.EnemyType;
 
     // Load enemy sprite
     loadImage(config.TEXTURES.ENEMY).then((img) => {
-      this.image = img;
+      this.imagesByType[config.ENEMY_TYPES.SOLDIER] = img;
+    });
+
+    loadImage(config.TEXTURES.ENEMY_LIEUTENANT).then((img) => {
+      this.imagesByType[config.ENEMY_TYPES.LIEUTENANT] = img;
     });
 
     // Load blood texture
@@ -68,8 +74,9 @@ export class Enemy extends ScreenObject implements IEnemy {
     }
 
     const currentPlayer = this.world.player;
+    const image = this.imagesByType[this._type];
 
-    if (!this.image || !currentPlayer) {
+    if (!image || !currentPlayer) {
       return;
     }
 
@@ -113,13 +120,35 @@ export class Enemy extends ScreenObject implements IEnemy {
       );
     }
 
-    if (!this.dead && shouldDraw && this.image) {
+    if (!this.dead && shouldDraw && image) {
       ctx.drawImage(
-        this.image,
+        image,
         texturePoint.x,
         texturePoint.y,
         textureSize,
         textureSize
+      );
+
+      // Draw lives bar
+      ctx.rotate((-this.rotation * Math.PI) / 180);
+      const barWidth = this.width;
+      const barHeight = 5;
+      const livesRatio = this._lives / config.ENEMY_LIVES_BY_TYPE[this._type];
+
+      ctx.fillStyle = "red";
+      ctx.fillRect(
+        -barWidth / 2,
+        this.height / 2 + barHeight + 6,
+        barWidth,
+        barHeight
+      );
+
+      ctx.fillStyle = "lime";
+      ctx.fillRect(
+        -barWidth / 2,
+        this.height / 2 + barHeight + 6,
+        barWidth * livesRatio,
+        barHeight
       );
     }
 
@@ -171,10 +200,7 @@ export class Enemy extends ScreenObject implements IEnemy {
 
   applyFromGameStateDelta(enemyDelta: EnemyUpdate): void {
     if (enemyDelta.position) {
-      this._point.setTo(
-        enemyDelta.position.x,
-        enemyDelta.position.y
-      );
+      this._point.setTo(enemyDelta.position.x, enemyDelta.position.y);
       this._rotation = enemyDelta.position.rotation;
     }
 

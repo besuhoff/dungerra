@@ -57,6 +57,8 @@ export const PLAYER_REWARD = 100; // Reward for killing an enemy in $
 export const ENEMY_SPEED = 120; // Units per second
 export const ENEMY_SIZE = 24;
 export const ENEMY_LIVES = 1;
+export const ENEMY_LIEUTENANT_LIVES = 2;
+export const ENEMY_TOWER_LIVES = 30;
 export const ENEMY_TEXTURE_SIZE = 64;
 export const ENEMY_TEXTURE_CENTER = new Point2D(
   PLAYER_TEXTURE_SIZE / 2 - 1,
@@ -68,6 +70,7 @@ export const ENEMY_BULLET_SPEED = 240; // Units per second
 export const ENEMY_DEATH_TRACE_TIME = 5; // Seconds the blood stain is visible
 export const ENEMY_REWARD = 10; // Reward for killing an enemy in $
 export const ENEMY_BULLET_COLOR = "#FF0000"; // Red bullets for enemies
+export const ENEMY_LIEUTENANT_BULLET_COLOR = "#0004ffff"; // Blue bullets for lieutenant enemies
 export const ENEMY_DROP_CHANCE = 0.3; // Chance to drop a bonus when enemy dies
 export const ENEMY_DROP_TYPE_CHANCES: Partial<Record<BonusType, number>> = {
   aid_kit: 5,
@@ -101,6 +104,7 @@ export const TEXTURES = {
   PLAYER_RAILGUN: Assets.playerRailgunTexture,
   PLAYER_ROCKET_LAUNCHER: Assets.playerRocketLauncherTexture,
   ENEMY: Assets.enemyTexture,
+  ENEMY_LIEUTENANT: Assets.enemyLieutenantTexture,
   BLOOD: Assets.bloodTexture,
   AID_KIT: Assets.aidKitTexture,
   GOGGLES: Assets.gogglesTexture,
@@ -145,6 +149,20 @@ export const SOUNDS = {
 };
 
 export type WeaponType = "blaster" | "shotgun" | "railgun" | "rocket_launcher";
+
+export const ENEMY_TYPES = {
+  SOLDIER: "pr",
+  LIEUTENANT: "lt",
+  TOWER: "tw",
+};
+
+export type EnemyType = (typeof ENEMY_TYPES)[keyof typeof ENEMY_TYPES];
+
+export const ENEMY_LIVES_BY_TYPE: Record<EnemyType, number> = {
+  [ENEMY_TYPES.SOLDIER]: ENEMY_LIVES,
+  [ENEMY_TYPES.LIEUTENANT]: ENEMY_LIEUTENANT_LIVES,
+  [ENEMY_TYPES.TOWER]: ENEMY_TOWER_LIVES,
+};
 
 export const WEAPON_TYPES: readonly WeaponType[] = [
   "blaster",
@@ -242,4 +260,9 @@ export const BULLET_AFTERLIFE_MS_BY_WEAPON_TYPE: Record<WeaponType, number> = {
   shotgun: 0,
   railgun: 200,
   rocket_launcher: ANIMATIONS.EXPLOSION.duration,
+};
+
+export const BULLET_COLOR_BY_ENEMY_TYPE: Partial<Record<EnemyType, string>> = {
+  [ENEMY_TYPES.SOLDIER]: ENEMY_BULLET_COLOR,
+  [ENEMY_TYPES.LIEUTENANT]: ENEMY_LIEUTENANT_BULLET_COLOR,
 };
