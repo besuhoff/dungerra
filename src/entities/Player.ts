@@ -142,16 +142,14 @@ export class Player extends ScreenObject implements IPlayer {
   getGunPoint(): IPoint {
     // Get gun position
     return this.getPosition()
-      .movedByPointCoordinates(config.PLAYER_TEXTURE_CENTER.inverted())
-      .moveByPointCoordinates(config.PLAYER_GUN_END)
+      .movedByPointCoordinates(config.PLAYER_GUN_END)
       .rotateAroundPointCoordinates(this.getPosition(), this._rotation);
   }
 
   getTorchPoint(): IPoint {
     // Get gun position
     return this.getPosition()
-      .movedByPointCoordinates(config.PLAYER_TEXTURE_CENTER.inverted())
-      .moveByPointCoordinates(config.PLAYER_TORCH_POINT)
+      .movedByPointCoordinates(config.PLAYER_TORCH_POINT)
       .rotateAroundPointCoordinates(this.getPosition(), this._rotation);
   }
 
@@ -438,7 +436,8 @@ export class Player extends ScreenObject implements IPlayer {
     player._score = playerData.score;
     player._selectedGunType = playerData.selectedGunType as config.WeaponType;
     player._inventory = playerData.inventory;
-    player._bulletsLeft = playerData.bulletsLeftByWeaponType[player._selectedGunType] ?? 0;
+    player._bulletsLeft =
+      playerData.bulletsLeftByWeaponType[player._selectedGunType] ?? 0;
     player._invulnerableTimer = playerData.invulnerableTimer;
     player._nightVisionTimer = playerData.nightVisionTimer;
 
@@ -453,10 +452,7 @@ export class Player extends ScreenObject implements IPlayer {
     }
 
     if (changeset.position) {
-      this.getPosition().setTo(
-        changeset.position.x,
-        changeset.position.y
-      );
+      this.getPosition().setTo(changeset.position.x, changeset.position.y);
       this._rotation = changeset.position.rotation;
     }
 

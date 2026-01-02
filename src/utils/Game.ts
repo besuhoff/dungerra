@@ -63,6 +63,7 @@ export class Game {
       audioManager.loadSound(config.SOUNDS.PLAYER_HURT),
       audioManager.loadSound(config.SOUNDS.PLAYER_DEAD),
       audioManager.loadSound(config.SOUNDS.ENEMY_HURT),
+      audioManager.loadSound(config.SOUNDS.TOWER_HIT),
       audioManager.loadSound(config.SOUNDS.TORCH),
     ]);
 
@@ -79,6 +80,7 @@ export class Game {
     audioManager.loadSound(config.SOUNDS.ENTER_SHOP);
     audioManager.loadSound(config.SOUNDS.MONEY_SPENT);
     audioManager.loadSound(config.SOUNDS.MISTAKE);
+    audioManager.loadSound(config.SOUNDS.TOWER_CRASH);
     loadImage(config.TEXTURES.BLOOD);
     loadImage(config.TEXTURES.AID_KIT);
     loadImage(config.TEXTURES.GOGGLES);

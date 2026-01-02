@@ -10,9 +10,9 @@ import { AudioManager } from "../utils/AudioManager";
 import { Enemy as EnemyMessage, EnemyUpdate } from "../types/socketEvents";
 
 export class Enemy extends ScreenObject implements IEnemy {
-  private imagesByType: Partial<Record<config.EnemyType, HTMLImageElement>> =
-    {};
-  private bloodImage: HTMLImageElement | null = null;
+  private _enemyTowerBg: HTMLImageElement | null = null;
+  private _image: HTMLImageElement | null = null;
+  private deadImage: HTMLImageElement | null = null;
   private dead: boolean = false;
   private _lives = config.ENEMY_LIVES;
   private _rotation: number = 0;
@@ -22,16 +22,16 @@ export class Enemy extends ScreenObject implements IEnemy {
     return this._lives;
   }
 
-  get wall(): IWall {
+  get wall(): IWall | undefined {
     return this._wall;
   }
 
   constructor(
     private world: IWorld,
-    private _wall: IWall,
-    enemyData: EnemyMessage
+    enemyData: EnemyMessage,
+    private _wall?: IWall | undefined
   ) {
-    const size = config.ENEMY_SIZE;
+    const size = config.ENEMY_SIZE_BY_TYPE[enemyData.type as config.EnemyType];
 
     const position = enemyData.position ?? { x: 0, y: 0 };
 
@@ -42,17 +42,17 @@ export class Enemy extends ScreenObject implements IEnemy {
     this._type = enemyData.type as config.EnemyType;
 
     // Load enemy sprite
-    loadImage(config.TEXTURES.ENEMY).then((img) => {
-      this.imagesByType[config.ENEMY_TYPES.SOLDIER] = img;
+    loadImage(config.ENEMY_TEXTURE_BY_TYPE[this._type]).then((img) => {
+      this._image = img;
     });
 
-    loadImage(config.TEXTURES.ENEMY_LIEUTENANT).then((img) => {
-      this.imagesByType[config.ENEMY_TYPES.LIEUTENANT] = img;
+    loadImage(config.TEXTURES.ENEMY_TOWER_BACK).then((img) => {
+      this._enemyTowerBg = img;
     });
 
     // Load blood texture
-    loadImage(config.TEXTURES.BLOOD).then((img) => {
-      this.bloodImage = img;
+    loadImage(config.ENEMY_DEAD_TEXTURE_BY_TYPE[this._type]).then((img) => {
+      this.deadImage = img;
     });
   }
 
@@ -63,8 +63,7 @@ export class Enemy extends ScreenObject implements IEnemy {
   getGunPoint(): IPoint {
     // Get gun position
     return this.getPosition()
-      .movedByPointCoordinates(config.ENEMY_TEXTURE_CENTER.inverted())
-      .moveByPointCoordinates(config.ENEMY_GUN_END)
+      .movedByPointCoordinates(config.ENEMY_GUN_END_BY_TYPE[this._type])
       .rotateAroundPointCoordinates(this.getPosition(), this.rotation);
   }
 
@@ -74,9 +73,8 @@ export class Enemy extends ScreenObject implements IEnemy {
     }
 
     const currentPlayer = this.world.player;
-    const image = this.imagesByType[this._type];
 
-    if (!image || !currentPlayer) {
+    if (!this._image || !currentPlayer) {
       return;
     }
 
@@ -101,28 +99,44 @@ export class Enemy extends ScreenObject implements IEnemy {
     ctx.save();
     ctx.translate(screenPoint.x, screenPoint.y);
 
-    const textureSize = !this.dead
+    let textureSize = !this.dead
       ? config.ENEMY_TEXTURE_SIZE
       : config.BLOOD_TEXTURE_SIZE;
-    const texturePoint = !this.dead
-      ? config.ENEMY_TEXTURE_CENTER.inverted()
+    let texturePoint = !this.dead
+      ? config.ENEMY_SOLDIER_TEXTURE_CENTER.inverted()
       : new Point2D(-textureSize / 2, -textureSize / 2);
 
-    ctx.rotate((this.rotation * Math.PI) / 180);
+    const towerType = config.ENEMY_TYPES.TOWER;
 
-    if (this.dead && shouldDraw && this.bloodImage) {
+    if (this._type === towerType) {
+      textureSize = config.ENEMY_TOWER_TEXTURE_SIZE;
+      texturePoint = config.ENEMY_TOWER_TEXTURE_CENTER.inverted();
+    }
+
+    if (this.dead && shouldDraw && this.deadImage) {
       ctx.drawImage(
-        this.bloodImage,
-        -this.width / 2,
-        -this.height / 2,
-        this.width,
-        this.height
+        this.deadImage,
+        texturePoint.x,
+        texturePoint.y,
+        textureSize,
+        textureSize
       );
     }
 
-    if (!this.dead && shouldDraw && image) {
+    if (!this.dead && shouldDraw) {
+      if (this._type === towerType && this._enemyTowerBg) {
+        ctx.drawImage(
+          this._enemyTowerBg,
+          texturePoint.x,
+          texturePoint.y,
+          textureSize,
+          textureSize
+        );
+      }
+
+      ctx.rotate((this.rotation * Math.PI) / 180);
       ctx.drawImage(
-        image,
+        this._image,
         texturePoint.x,
         texturePoint.y,
         textureSize,
@@ -171,9 +185,7 @@ export class Enemy extends ScreenObject implements IEnemy {
         uiCtx.rotate((this.rotation * Math.PI) / 180);
 
         uiCtx.fillStyle = "magenta";
-        const gunPoint = texturePoint.movedByPointCoordinates(
-          config.ENEMY_GUN_END
-        );
+        const gunPoint = config.ENEMY_GUN_END_BY_TYPE[this._type];
         uiCtx.beginPath();
         uiCtx.arc(gunPoint.x, gunPoint.y, 2, 0, Math.PI * 2);
         uiCtx.fill();
@@ -181,11 +193,14 @@ export class Enemy extends ScreenObject implements IEnemy {
         uiCtx.rotate((-this.rotation * Math.PI) / 180);
       }
 
-      uiCtx.fillStyle = "white";
-      uiCtx.font = `12px ${config.FONT_NAME}`;
-      uiCtx.textAlign = "left";
-      uiCtx.fillText(`Wall #${this._wall.id}`, -20, 24);
-      uiCtx.fillText(`Position: ${this.getPosition()}`, -20, 36);
+      if (this._wall) {
+        uiCtx.fillStyle = "white";
+        uiCtx.font = `12px ${config.FONT_NAME}`;
+        uiCtx.textAlign = "left";
+        uiCtx.fillText(`Wall #${this._wall.id}`, -20, 24);
+        uiCtx.fillText(`Position: ${this.getPosition()}`, -20, 36);
+      }
+
       uiCtx.restore();
     }
   }
@@ -213,7 +228,13 @@ export class Enemy extends ScreenObject implements IEnemy {
         const volume = distance >= maxDistance ? 0 : 1 - distance / maxDistance;
 
         const audioManager = AudioManager.getInstance();
-        audioManager.playSound(config.SOUNDS.ENEMY_HURT, { volume });
+        const sound =
+          this._type === config.ENEMY_TYPES.TOWER
+            ? enemyDelta.lives.isAlive
+              ? config.SOUNDS.TOWER_HIT
+              : config.SOUNDS.TOWER_CRASH
+            : config.SOUNDS.ENEMY_HURT;
+        audioManager.playSound(sound, { volume });
       }
 
       this._lives = enemyDelta.lives.lives;
