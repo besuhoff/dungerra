@@ -42,10 +42,7 @@ export class OtherPlayer extends ScreenObject implements IOtherPlayer {
     private world: IWorld,
     playerData: PlayerMessage
   ) {
-    const point = new Point2D(
-      playerData.position!.x,
-      playerData.position!.y
-    );
+    const point = new Point2D(playerData.position!.x, playerData.position!.y);
     const rotation = playerData.rotation;
     const id = playerData.id;
 
@@ -79,8 +76,7 @@ export class OtherPlayer extends ScreenObject implements IOtherPlayer {
   getGunPoint(): IPoint {
     // Get gun position
     return this.getPosition()
-      .movedByPointCoordinates(config.PLAYER_TEXTURE_CENTER.inverted())
-      .moveByPointCoordinates(config.PLAYER_GUN_END)
+      .movedByPointCoordinates(config.PLAYER_GUN_END)
       .rotateAroundPointCoordinates(this.getPosition(), this._rotation);
   }
 
@@ -257,8 +253,7 @@ export class OtherPlayer extends ScreenObject implements IOtherPlayer {
   getTorchPoint(): IPoint {
     // Get gun position
     return this.getPosition()
-      .movedByPointCoordinates(config.PLAYER_TEXTURE_CENTER.inverted())
-      .moveByPointCoordinates(config.PLAYER_TORCH_POINT)
+      .movedByPointCoordinates(config.PLAYER_TORCH_POINT)
       .rotateAroundPointCoordinates(this.getPosition(), this._rotation);
   }
 
@@ -276,7 +271,8 @@ export class OtherPlayer extends ScreenObject implements IOtherPlayer {
       this._nightVisionTimer = playerDelta.timers.nightVisionTimer;
     }
     if (playerDelta.inventory) {
-      this._weaponType = playerDelta.inventory.selectedGunType as config.WeaponType;
+      this._weaponType = playerDelta.inventory
+        .selectedGunType as config.WeaponType;
     }
   }
 }

@@ -769,15 +769,11 @@ export class World implements IWorld {
 
     for (const addedEnemy of Object.values(changeset.addedEnemies)) {
       let enemy = this._enemies.find((e) => e.id === addedEnemy.id);
-      const wall = this._walls.find((wall) => wall.id === addedEnemy.wallId);
-      if (!wall) {
-        console.log(
-          `Error: Wall ${addedEnemy.wallId} is undefined for Enemy ${addedEnemy.id}`
-        );
-        continue;
-      }
+      const wall = addedEnemy.wallId
+        ? this._walls.find((wall) => wall.id === addedEnemy.wallId)
+        : undefined;
 
-      enemy = new this._Enemy(this, wall!, addedEnemy);
+      enemy = new this._Enemy(this, addedEnemy, wall);
       this._enemies = this._enemies
         .filter((e) => e.id !== addedEnemy.id)
         .concat([enemy]);

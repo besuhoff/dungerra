@@ -6,6 +6,9 @@ import playerRailgunTexture from "./player-railgun.png";
 import playerRocketLauncherTexture from "./player-rocket-launcher.png";
 import enemyTexture from "./enemy.png";
 import enemyLieutenantTexture from "./enemy-lieutenant.png";
+import enemyTowerTexture from "./tower-back.png";
+import enemyTowerTurretTexture from "./tower-turret.png";
+import enemyTowerRuinedTexture from "./tower-ruined.png";
 import bloodTexture from "./blood-stain.png";
 import aidKitTexture from "./aid-kit.png";
 import gogglesTexture from "./goggles.png";
@@ -41,6 +44,8 @@ import shotgunSound from "./shotgun.ogg";
 import enterShopSound from "./enter-shop.ogg";
 import moneySpentSound from "./money-spent.ogg";
 import mistakeSound from "./mistake.ogg";
+import towerHitSound from "./tower-hit.ogg";
+import towerCrashSound from "./tower-crash.ogg";
 
 export const Assets = {
   floorTexture,
@@ -51,6 +56,9 @@ export const Assets = {
   playerRocketLauncherTexture,
   enemyTexture,
   enemyLieutenantTexture,
+  enemyTowerTexture,
+  enemyTowerTurretTexture,
+  enemyTowerRuinedTexture,
   bloodTexture,
   aidKitTexture,
   gogglesTexture,
@@ -90,4 +98,6 @@ export const Assets = {
   enterShopSound,
   moneySpentSound,
   mistakeSound,
+  towerHitSound,
+  towerCrashSound,
 };

@@ -7,9 +7,9 @@ import { EnemyUpdate, Enemy as EnemyMessage } from "../../types/socketEvents";
 export interface IEnemy extends IScreenObject, IDrawable {
   applyFromGameStateDelta(enemy: EnemyUpdate): void;
   rotation: number;
-  wall: IWall;
+  wall?: IWall;
 }
 
 export interface IEnemyFactory {
-  new (world: IWorld, wall: IWall, enemyData: EnemyMessage): IEnemy;
+  new (world: IWorld, enemyData: EnemyMessage, wall?: IWall): IEnemy;
 }
