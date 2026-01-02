@@ -451,7 +451,7 @@ export class World implements IWorld {
       ctx.fillStyle = "white";
       ctx.font = `22px ${config.FONT_NAME}`;
       ctx.fillText(
-        `Lives: ${Array(Math.floor(this._player.lives)).fill("❤️").join(" ")}`,
+        `Lives: ${Array(Math.ceil(this._player.lives)).fill("❤️").join(" ")}`,
         10,
         30
       );
