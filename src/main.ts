@@ -405,6 +405,7 @@ window.addEventListener("popstate", async () => {
       try {
         await sessionManager.endSession();
         game?.stop();
+        document.title = "Dungerra";
       } catch (error) {
         console.error("Error ending session:", error);
       }
@@ -433,6 +434,7 @@ window.addEventListener("popstate", async () => {
       }
       game = new Game();
       const session = await sessionManager.joinSession(sessionId);
+      document.title = `Dungerra - ${session.name}`;
       await game.start(session);
       showScreen("game");
     } catch (error) {

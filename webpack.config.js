@@ -18,6 +18,10 @@ module.exports = {
         exclude: /node_modules\/(?!dungeon-game-go)/,
       },
       {
+        test: /\.css$/i,
+        use: ["style-loader", "css-loader"],
+      },
+      {
         test: /\.(png|svg|jpg|jpeg|gif)$/i,
         type: "asset/resource",
         generator: {
@@ -50,7 +54,11 @@ module.exports = {
       hash: true,
     }),
     new CopyWebpackPlugin({
-      patterns: [{ from: "src/favicon.png", to: "favicon.png" }],
+      patterns: [
+        { from: "src/favicon.png", to: "favicon.png" },
+        { from: "src/styles.css", to: "styles.css" },
+        { from: "src/legend.html", to: "legend.html" },
+      ],
     }),
   ],
   devServer: {
