@@ -60,6 +60,9 @@ export const GameScreen: React.FC = () => {
     // Cleanup on unmount
     return () => {
       if (gameRef.current) {
+        sessionManager.endSession().catch((err) => {
+          console.error("Error ending session:", err);
+        });
         gameRef.current.stop();
         gameRef.current = null;
       }
@@ -67,27 +70,6 @@ export const GameScreen: React.FC = () => {
       document.title = "Dungerra";
     };
   }, [sessionId, navigate, sessionManager]);
-
-  // Handle browser back button - memoize handler to prevent recreating on every render
-  const handlePopState = useCallback(async () => {
-    if (gameRef.current) {
-      try {
-        await sessionManager.endSession();
-        gameRef.current.stop();
-
-        // Refresh leaderboard data
-        await leaderboardManager.getLeaderboard();
-        navigate("/sessions");
-      } catch (err) {
-        console.error("Error ending session:", err);
-      }
-    }
-  }, [sessionManager, leaderboardManager, navigate]);
-
-  useEffect(() => {
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, [handlePopState]);
 
   if (error) {
     return (
