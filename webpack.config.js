@@ -4,7 +4,7 @@ const CopyWebpackPlugin = require("copy-webpack-plugin");
 const { env } = require("process");
 
 module.exports = {
-  entry: "./src/main.ts",
+  entry: "./src/index.tsx",
   module: {
     rules: [
       {
@@ -54,11 +54,7 @@ module.exports = {
       hash: true,
     }),
     new CopyWebpackPlugin({
-      patterns: [
-        { from: "src/favicon.png", to: "favicon.png" },
-        { from: "src/styles.css", to: "styles.css" },
-        { from: "src/legend.html", to: "legend.html" },
-      ],
+      patterns: [{ from: "src/favicon.png", to: "favicon.png" }],
     }),
   ],
   devServer: {

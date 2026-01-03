@@ -67,10 +67,6 @@ button:active {
   animation: loading 0.8s ease-in-out infinite alternate;
 }
 
-#loginButton {
-  display: none;
-}
-
 .error {
   color: red;
   display: none;
@@ -82,7 +78,6 @@ button:active {
   position: relative;
   width: min(100vw, calc(100vh * 16 / 9));
   height: min(100vh, calc(100vw * 9 / 16));
-  display: none;
 }
 
 .gameCanvas {
@@ -103,8 +98,15 @@ button:active {
   width: 100%;
   height: 100%;
   color: #fff;
-  padding: 20px;
+}
+
+#loginScreen,
+#leaderboardScreen,
+#legendScreen {
+  padding: 16px;
   max-width: 700px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .text p {
@@ -120,13 +122,8 @@ button:active {
   margin-bottom: 20px;
 }
 
-#leaderboardScreen {
-  display: none;
-}
-
 .tabs {
   display: flex;
-  gap: 10px;
   margin-bottom: 20px;
 }
 
@@ -141,6 +138,16 @@ button:active {
   transition: all 0.2s ease;
 }
 
+.tab-button:not(:first-child) {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.tab-button:not(:last-child) {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
 .tab-button:hover {
   background-color: rgba(255, 153, 0, 0.3);
 }
@@ -151,14 +158,10 @@ button:active {
   border-color: #ff9900;
 }
 
-#leaderboard {
-  display: none;
-}
-
 .leaderboard-list {
   list-style: none;
   padding: 0;
-  margin: 20px 0;
+  margin: 0;
   width: 100%;
   max-width: 400px;
 }
@@ -209,7 +212,6 @@ button:active {
 }
 
 #leaderboard {
-  display: none;
   width: 100%;
   max-width: 400px;
 }
@@ -217,7 +219,7 @@ button:active {
 .sessions-list {
   list-style: none;
   padding: 0;
-  margin: 20px 0;
+  margin: 0;
   width: 100%;
   max-width: 400px;
 }
@@ -396,6 +398,10 @@ button:active {
   background-color: #777;
 }
 
+#legend {
+  color: #ccc;
+}
+
 #legend .light {
   position: relative;
 }
@@ -409,14 +415,45 @@ button:active {
   background: url(./assets/floor.png);
   border-radius: 50%;
   width: 200px;
-  height: 200px;
-  left: -65px;
-  top: -70px;
+  aspect-ratio: 1 / 1;
+  left: 35px;
+  top: 30px;
   box-shadow: inset 0 0 10px 10px #000;
+  animation: light-pulse 1.5s infinite;
+  transform: translate(-50%, -50%);
+  background-position: center center;
+}
+
+@keyframes light-pulse {
+  0%,
+  100% {
+    width: 200px;
+  }
+  12.5% {
+    width: 201px;
+  }
+  25% {
+    width: 199px;
+  }
+  37.5% {
+    width: 201px;
+  }
+  50% {
+    width: 199px;
+  }
+  62.5% {
+    width: 201px;
+  }
+  75% {
+    width: 200px;
+  }
+  87.5% {
+    width: 199px;
+  }
 }
 
 #legend .other-player figure::after {
-  top: -60px;
+  top: 40px;
 }
 
 #legend .bullets {
@@ -481,11 +518,12 @@ button:active {
 }
 
 #legend .tower {
-  display: inline-block;
+  display: block;
   position: relative;
   width: 180px;
   height: 180px;
   margin-left: 10px;
+  margin-top: 10px;
   background: url(assets/tower-back.png) no-repeat center center;
 }
 
@@ -493,6 +531,7 @@ button:active {
   text-align: center;
   max-width: max-content;
   margin: 0;
+  color: #fff;
 }
 
 #legend .inventory {
@@ -505,25 +544,25 @@ button:active {
   top: 42px;
 }
 
-#legend .inventory img[src*="goggles"] {
+#legend .inventory img[alt*="Goggles"] {
   right: 47px;
   top: 47px;
 }
 
-#legend .inventory img[src*="aid-kit"] {
+#legend .inventory img[alt*="Aid Kit"] {
   right: 5px;
   top: 47px;
 }
 
-#legend .inventory img[src*="shotgun"] {
+#legend .inventory img[alt*="Shotgun"] {
   left: 42px;
 }
 
-#legend .inventory img[src*="ammo"] {
+#legend .inventory img[alt*="Shotgun Ammo"] {
   top: 2px;
 }
 
-#legend .inventory img[src*="blaster"] {
+#legend .inventory img[alt*="Blaster"] {
   left: 2px;
   outline: 2px solid yellow;
   z-index: 10;
