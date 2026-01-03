@@ -4,7 +4,7 @@ const CopyWebpackPlugin = require("copy-webpack-plugin");
 const { env } = require("process");
 
 module.exports = {
-  entry: "./src/main.ts",
+  entry: "./src/index.tsx",
   module: {
     rules: [
       {
@@ -16,6 +16,10 @@ module.exports = {
           },
         },
         exclude: /node_modules\/(?!dungeon-game-go)/,
+      },
+      {
+        test: /\.css$/i,
+        use: ["style-loader", "css-loader"],
       },
       {
         test: /\.(png|svg|jpg|jpeg|gif)$/i,

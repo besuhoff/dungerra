@@ -277,7 +277,7 @@ export class Shop extends ScreenObject implements IShop {
         }
 
         uiCtx.save();
-        uiCtx.fillStyle = "#f7e78cff";
+        uiCtx.fillStyle = "#f7e78c";
 
         const player = this.world.player;
         const itemId = Number(type) as config.InventoryItemID;
@@ -286,11 +286,11 @@ export class Shop extends ScreenObject implements IShop {
         ).includes(itemId);
 
         if (player && player.money < item.price * item.packSize) {
-          uiCtx.fillStyle = "#ff4d4dff";
+          uiCtx.fillStyle = "#ff4d4d";
         }
 
         if (isWeapon && player && player.hasInventoryItem(itemId)) {
-          uiCtx.fillStyle = "#4dff4dff";
+          uiCtx.fillStyle = "#4dff4d";
         }
 
         uiCtx.font = `20px ${config.FONT_NAME}`;
