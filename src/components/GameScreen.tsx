@@ -1,4 +1,10 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  useMemo,
+} from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Game } from "../utils/Game";
 import { SessionManager } from "../api/SessionManager";
@@ -9,15 +15,28 @@ export const GameScreen: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
   const gameRef = useRef<Game | null>(null);
+  const initializingRef = useRef(false);
   const [error, setError] = useState("");
-  const sessionManager = SessionManager.getInstance();
-  const leaderboardManager = LeaderboardManager.getInstance();
+
+  // Memoize manager instances to prevent re-creation on every render
+  const sessionManager = useMemo(() => SessionManager.getInstance(), []);
+  const leaderboardManager = useMemo(
+    () => LeaderboardManager.getInstance(),
+    []
+  );
 
   useEffect(() => {
     if (!sessionId) {
       navigate("/sessions");
       return;
     }
+
+    // Prevent multiple initializations
+    if (initializingRef.current || gameRef.current) {
+      return;
+    }
+
+    initializingRef.current = true;
 
     const initGame = async () => {
       try {
@@ -31,6 +50,8 @@ export const GameScreen: React.FC = () => {
         console.error("Failed to join session:", err);
         setError("Failed to join session. Redirecting...");
         setTimeout(() => navigate("/sessions"), 2000);
+      } finally {
+        initializingRef.current = false;
       }
     };
 
@@ -42,30 +63,31 @@ export const GameScreen: React.FC = () => {
         gameRef.current.stop();
         gameRef.current = null;
       }
+      initializingRef.current = false;
       document.title = "Dungerra";
     };
-  }, [sessionId, navigate]);
+  }, [sessionId, navigate, sessionManager]);
 
-  // Handle browser back button
-  useEffect(() => {
-    const handlePopState = async () => {
-      if (gameRef.current) {
-        try {
-          await sessionManager.endSession();
-          gameRef.current.stop();
+  // Handle browser back button - memoize handler to prevent recreating on every render
+  const handlePopState = useCallback(async () => {
+    if (gameRef.current) {
+      try {
+        await sessionManager.endSession();
+        gameRef.current.stop();
 
-          // Refresh leaderboard data
-          await leaderboardManager.getLeaderboard();
-          navigate("/sessions");
-        } catch (err) {
-          console.error("Error ending session:", err);
-        }
+        // Refresh leaderboard data
+        await leaderboardManager.getLeaderboard();
+        navigate("/sessions");
+      } catch (err) {
+        console.error("Error ending session:", err);
       }
-    };
+    }
+  }, [sessionManager, leaderboardManager, navigate]);
 
+  useEffect(() => {
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, [navigate]);
+  }, [handlePopState]);
 
   if (error) {
     return (
@@ -98,3 +120,6 @@ export const GameScreen: React.FC = () => {
     </div>
   );
 };
+
+// Memoize component to prevent re-renders from parent
+export default React.memo(GameScreen);

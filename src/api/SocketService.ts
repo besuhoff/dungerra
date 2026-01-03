@@ -34,7 +34,20 @@ export class SocketService {
   }
 
   public connect(sessionId: string): WebSocket {
-    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+    // If already connected to the same session, return existing socket
+    if (
+      this.socket &&
+      this.sessionId === sessionId &&
+      (this.socket.readyState === WebSocket.OPEN ||
+        this.socket.readyState === WebSocket.CONNECTING)
+    ) {
+      console.log("Already connected or connecting to session:", sessionId);
+      return this.socket;
+    }
+
+    // Close existing connection if connecting to different session or socket is in bad state
+    if (this.socket) {
+      console.log("Closing existing WebSocket connection");
       this.socket.close();
     }
 
@@ -44,6 +57,7 @@ export class SocketService {
     const wsUrl = config.API_DOMAIN.replace(/^https?:\/\//, "");
     const url = `${wsProtocol}://${wsUrl}/ws?sessionId=${sessionId}&token=${token}&protocol=${this.binaryMode ? "binary" : "json"}`;
 
+    console.log("Establishing new WebSocket connection to:", sessionId);
     this.socket = new WebSocket(url);
     if (this.binaryMode) {
       this.socket.binaryType = "arraybuffer";

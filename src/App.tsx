@@ -9,7 +9,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { LoginScreen } from "./components/LoginScreen";
 import { LeaderboardScreen } from "./components/LeaderboardScreen";
-import { GameScreen } from "./components/GameScreen";
+import GameScreen from "./components/GameScreen";
 import { LegendScreen } from "./components/LegendScreen";
 
 export const App: React.FC = () => {
