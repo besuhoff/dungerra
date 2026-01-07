@@ -12,7 +12,7 @@ export class Bullet extends ScreenObject implements IBullet {
   private _velocity: Vector2D;
   private _speed: number;
   private _active: boolean = true;
-  private _inactiveMs: number = 0;
+  private _deletedAt: number = 0;
   private _weaponType: config.WeaponType = "blaster";
   private static _imageRocket: HTMLImageElement | null = null;
   private static _imageRocketBlast: HTMLImageElement | null = null;
@@ -21,8 +21,8 @@ export class Bullet extends ScreenObject implements IBullet {
     return this._weaponType;
   }
 
-  get inactiveMs(): number {
-    return this._inactiveMs;
+  get deletedAt(): number {
+    return this._deletedAt;
   }
 
   get active(): boolean {
@@ -99,7 +99,7 @@ export class Bullet extends ScreenObject implements IBullet {
     }
 
     bullet._weaponType = bulletData.weaponType as config.WeaponType;
-    bullet._inactiveMs = Number(bulletData.inactiveMs ?? 0);
+    bullet._deletedAt = Number(bulletData.deletedAt ?? 0);
 
     return bullet;
   }
