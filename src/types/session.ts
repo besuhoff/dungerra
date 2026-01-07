@@ -5,6 +5,7 @@ export interface SessionPlayer {
   kills: number;
   money: number;
   is_alive: boolean;
+  is_connected: boolean;
   position: {
     x: number;
     y: number;

@@ -224,7 +224,9 @@ export const LeaderboardScreen: React.FC = () => {
                 </li>
               ) : (
                 sessions.map((session) => {
-                  const playerCount = Object.keys(session.players).length;
+                  const playerCount = Object.values(session.players).filter(
+                    (player) => player.is_connected
+                  ).length;
                   const maxPlayers = session.max_players || 4;
                   const isHost = session.host.id === currentUserId;
 
