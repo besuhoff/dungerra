@@ -9,7 +9,6 @@ import { IWall } from "../types/screen-objects/IWall";
 import { IChunk } from "../types/screen-objects/IChunk";
 import { IPoint } from "../types/geometry/IPoint";
 import { IWorld } from "../types/IWorld";
-import { loadImage } from "./loadImage";
 import { Point2D } from "./geometry/Point2D";
 import { AudioManager } from "./AudioManager";
 import { SessionManager } from "../api/SessionManager";
@@ -23,9 +22,8 @@ import {
   IBulletManager,
   IBulletManagerFactory,
 } from "../types/screen-objects/IBulletManager";
-import { IBulletFactory } from "../types/screen-objects/IBullet";
-import { SessionPlayer } from "../types/session";
 import { IShop, IShopFactory } from "../types/screen-objects/IShop";
+import { ImageManager } from "./ImageManager";
 
 export class World implements IWorld {
   private readonly CHUNK_SIZE = 2000; // Same as screen width for now
@@ -41,9 +39,6 @@ export class World implements IWorld {
   private _gameOver: boolean = false;
 
   private floorTexture: HTMLImageElement | null = null;
-  private inventoryItemTextures: Partial<
-    Record<config.InventoryItemID, HTMLImageElement>
-  > = {};
 
   private chunks: Map<string, IChunk> = new Map();
   private _cameraPoint: IPoint = new Point2D(0, 0);
@@ -136,18 +131,10 @@ export class World implements IWorld {
     });
 
     // Load floor texture
-    loadImage(config.TEXTURES.FLOOR).then((img) => {
+    const imageManager = ImageManager.getInstance();
+    imageManager.loadImage(config.TEXTURES.FLOOR).then((img) => {
       this.floorTexture = img;
     });
-
-    Object.entries(config.INVENTORY_ITEM_TEXTURES).forEach(
-      ([key, texturePath]) => {
-        loadImage(texturePath).then((img) => {
-          this.inventoryItemTextures[Number(key) as config.InventoryItemID] =
-            img;
-        });
-      }
-    );
 
     this._bulletManager = new this._BulletManager(this);
   }
@@ -449,14 +436,16 @@ export class World implements IWorld {
       );
     } else {
       ctx.fillStyle = "white";
-      ctx.font = `22px ${config.FONT_NAME}`;
+      ctx.font = `16px ${config.FONT_NAME}`;
       ctx.fillText(
         `Lives: ${Array(Math.ceil(this._player.lives)).fill("❤️").join(" ")}`,
         10,
-        30
+        25
       );
       ctx.fillStyle = "yellow";
-      ctx.fillText(`Money: ${this._player.money.toFixed(0)}$`, 10, 60);
+      ctx.fillText(`Money: ${this._player.money.toFixed(0)}$`, 10, 50);
+      ctx.fillStyle = "white";
+      ctx.fillText(`Score: ${this._player.score.toFixed(0)}`, 10, 75);
       ctx.fillStyle = "cyan";
 
       const symbol = config.BULLET_SYMBOL[this._player.selectedGunType];
@@ -467,13 +456,13 @@ export class World implements IWorld {
           : bulletsLeft < 6
             ? Array(bulletsLeft).fill(symbol).join("")
             : `${symbol} x ${bulletsLeft}`;
-      ctx.fillText(`Bullets: ${bulletsDisplay}`, 10, 90);
+      ctx.fillText(`Bullets: ${bulletsDisplay}`, 10, 100);
       if (this._player.hasNightVision()) {
         ctx.fillStyle = "#90ff90";
         ctx.fillText(
           `Night Vision: ${this._player.nightVisionTimer.toFixed(0)}`,
           10,
-          120
+          125
         );
       }
     }
@@ -690,10 +679,6 @@ export class World implements IWorld {
 
   restart(): void {
     this._sessionManager.notifyRespawn();
-  }
-
-  getInventoryTexture(type: config.InventoryItemID): HTMLImageElement | null {
-    return this.inventoryItemTextures[type] || null;
   }
 
   applyGameStateDelta(

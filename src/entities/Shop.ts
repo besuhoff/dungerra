@@ -1,6 +1,5 @@
 import { IWorld } from "../types/IWorld";
 import { IShop } from "../types/screen-objects/IShop";
-import { loadImage } from "../utils/loadImage";
 import {
   Shop as ShopMessage,
   ShopItem,
@@ -10,6 +9,7 @@ import { Point2D } from "../utils/geometry/Point2D";
 import { ScreenObject } from "./ScreenObject";
 import * as config from "../config";
 import { AudioManager } from "../utils/AudioManager";
+import { ImageManager } from "../utils/ImageManager";
 
 export class Shop extends ScreenObject implements IShop {
   private _image: HTMLImageElement | null = null;
@@ -30,11 +30,12 @@ export class Shop extends ScreenObject implements IShop {
     this._name = shopData.name;
 
     // Load player sprite
-    loadImage(config.TEXTURES.SHOP).then((img) => {
+    const imageManager = ImageManager.getInstance();
+    imageManager.loadImage(config.TEXTURES.SHOP).then((img) => {
       this._image = img;
     });
 
-    loadImage(config.TEXTURES.SHOP_LAYOUT).then((img) => {
+    imageManager.loadImage(config.TEXTURES.SHOP_LAYOUT).then((img) => {
       this._layoutImage = img;
     });
   }
@@ -263,7 +264,8 @@ export class Shop extends ScreenObject implements IShop {
         const itemY = startY + index * itemSpacingY;
 
         // Draw item icon
-        const icon = this.world.getInventoryTexture(
+        const imageManager = ImageManager.getInstance();
+        const icon = imageManager.getInventoryTexture(
           Number(type) as config.InventoryItemID
         );
         if (icon) {

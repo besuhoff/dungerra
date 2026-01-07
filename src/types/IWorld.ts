@@ -40,5 +40,4 @@ export interface IWorld {
     changeset: GameStateDeltaMessage,
     currentPlayerId: string
   ): void;
-  getInventoryTexture(type: InventoryItemID): HTMLImageElement | null;
 }

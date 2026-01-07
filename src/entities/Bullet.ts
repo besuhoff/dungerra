@@ -6,7 +6,7 @@ import { IPoint } from "../types/geometry/IPoint";
 import { IWorld } from "../types/IWorld";
 import { Point2D } from "../utils/geometry/Point2D";
 import { Bullet as BulletMessage } from "../types/socketEvents";
-import { loadImage } from "../utils/loadImage";
+import { ImageManager } from "../utils/ImageManager";
 
 export class Bullet extends ScreenObject implements IBullet {
   private _velocity: Vector2D;
@@ -54,19 +54,20 @@ export class Bullet extends ScreenObject implements IBullet {
       this._speed
     );
 
+    const imageManager = ImageManager.getInstance();
     // Preload rocket image
     if (!Bullet._imageRocket) {
-      loadImage(config.TEXTURES.BULLET_ROCKET).then((img) => {
+      imageManager.loadImage(config.TEXTURES.BULLET_ROCKET).then((img) => {
         Bullet._imageRocket = img;
       });
     }
 
     if (!Bullet._imageRocketBlast) {
-      loadImage(config.ANIMATIONS.EXPLOSION.image).then((image) => {
-        document.body.appendChild(image);
-        image.style.display = "none";
-        Bullet._imageRocketBlast = image;
-      });
+      imageManager
+        .loadImage(config.ANIMATIONS.EXPLOSION.image)
+        .then((image) => {
+          Bullet._imageRocketBlast = image;
+        });
     }
   }
 

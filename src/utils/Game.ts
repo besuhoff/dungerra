@@ -4,7 +4,6 @@ import { Enemy } from "../entities/Enemy";
 import { Player } from "../entities/Player";
 import { Wall } from "../entities/Wall";
 import { AudioManager } from "./AudioManager";
-import { loadImage } from "./loadImage";
 import { World } from "./World";
 import { SessionManager } from "../api/SessionManager";
 import { AuthManager } from "../api/AuthManager";
@@ -12,10 +11,8 @@ import { Shop } from "../entities/Shop";
 import { Session } from "../types/session";
 import { OtherPlayer } from "../entities/OtherPlayer";
 import { BulletManager } from "./BulletManager";
+import { ImageManager } from "./ImageManager";
 export class Game {
-  private _canvas: HTMLCanvasElement;
-  private _lightCanvas: HTMLCanvasElement;
-  private _uiCanvas: HTMLCanvasElement;
   private _ctx: CanvasRenderingContext2D;
   private _lightCtx: CanvasRenderingContext2D;
   private _uiCtx: CanvasRenderingContext2D;
@@ -30,13 +27,11 @@ export class Game {
     return this._world;
   }
 
-  constructor() {
-    this._canvas = document.getElementById("gameCanvas") as HTMLCanvasElement;
-    this._lightCanvas = document.getElementById(
-      "lightCanvas"
-    ) as HTMLCanvasElement;
-    this._uiCanvas = document.getElementById("uiCanvas") as HTMLCanvasElement;
-
+  constructor(
+    private _canvas: HTMLCanvasElement,
+    private _lightCanvas: HTMLCanvasElement,
+    private _uiCanvas: HTMLCanvasElement
+  ) {
     [this._canvas, this._lightCanvas, this._uiCanvas].forEach((canvas) => {
       canvas.width = config.SCREEN_WIDTH;
       canvas.height = config.SCREEN_HEIGHT;
@@ -54,12 +49,13 @@ export class Game {
 
   public static async loadResources(): Promise<void> {
     const audioManager = AudioManager.getInstance();
+    const imageManager = ImageManager.getInstance();
 
     await Promise.all([
-      loadImage(config.TEXTURES.FLOOR),
-      loadImage(config.TEXTURES.PLAYER),
-      loadImage(config.TEXTURES.ENEMY),
-      loadImage(config.TEXTURES.WALL),
+      imageManager.loadImage(config.TEXTURES.FLOOR),
+      imageManager.loadPlayerTextures(),
+      imageManager.loadImage(config.TEXTURES.ENEMY),
+      imageManager.loadImage(config.TEXTURES.WALL),
       audioManager.loadSound(config.SOUNDS.PLAYER_HURT),
       audioManager.loadSound(config.SOUNDS.PLAYER_DEAD),
       audioManager.loadSound(config.SOUNDS.ENEMY_HURT),
@@ -81,10 +77,12 @@ export class Game {
     audioManager.loadSound(config.SOUNDS.MONEY_SPENT);
     audioManager.loadSound(config.SOUNDS.MISTAKE);
     audioManager.loadSound(config.SOUNDS.TOWER_CRASH);
-    loadImage(config.TEXTURES.BLOOD);
-    loadImage(config.TEXTURES.AID_KIT);
-    loadImage(config.TEXTURES.GOGGLES);
-    loadImage(config.TEXTURES.SHOP);
+    imageManager.loadImage(config.TEXTURES.BLOOD);
+    imageManager.loadImage(config.TEXTURES.AID_KIT);
+    imageManager.loadImage(config.TEXTURES.GOGGLES);
+    imageManager.loadImage(config.TEXTURES.CHEST);
+    imageManager.loadImage(config.TEXTURES.SHOP);
+    imageManager.loadInventoryTextures();
   }
 
   private setupEventListeners(): void {

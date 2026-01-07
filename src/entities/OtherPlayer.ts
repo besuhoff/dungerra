@@ -2,18 +2,12 @@ import { ScreenObject } from "./ScreenObject";
 import * as config from "../config";
 import { IPoint } from "../types/geometry/IPoint";
 import { IWorld } from "../types/IWorld";
-import { loadImage } from "../utils/loadImage";
 import { IOtherPlayer } from "../types/screen-objects/IOtherPlayer";
 import { Point2D } from "../utils/geometry/Point2D";
 import { Player as PlayerMessage, PlayerUpdate } from "../types/socketEvents";
+import { ImageManager } from "../utils/ImageManager";
 
 export class OtherPlayer extends ScreenObject implements IOtherPlayer {
-  private _images: Record<config.WeaponType, HTMLImageElement | null> = {
-    blaster: null,
-    shotgun: null,
-    railgun: null,
-    rocket_launcher: null,
-  };
   private _bloodImage: HTMLImageElement | null = null;
 
   private _rotation: number = 0;
@@ -51,24 +45,9 @@ export class OtherPlayer extends ScreenObject implements IOtherPlayer {
     this._name = playerData.username;
     this._rotation = rotation;
 
-    // Load player sprite
-    loadImage(config.PLAYER_TEXTURE_BY_WEAPON_TYPE.blaster).then((img) => {
-      this._images.blaster = img;
-    });
-    loadImage(config.PLAYER_TEXTURE_BY_WEAPON_TYPE.shotgun).then((img) => {
-      this._images.shotgun = img;
-    });
-    loadImage(config.PLAYER_TEXTURE_BY_WEAPON_TYPE.railgun).then((img) => {
-      this._images.railgun = img;
-    });
-    loadImage(config.PLAYER_TEXTURE_BY_WEAPON_TYPE.rocket_launcher).then(
-      (img) => {
-        this._images.rocket_launcher = img;
-      }
-    );
-
     // Load blood texture
-    loadImage(config.TEXTURES.BLOOD).then((img) => {
+    const imageManager = ImageManager.getInstance();
+    imageManager.loadImage(config.TEXTURES.BLOOD).then((img) => {
       this._bloodImage = img;
     });
   }
@@ -96,11 +75,9 @@ export class OtherPlayer extends ScreenObject implements IOtherPlayer {
   }
 
   draw(ctx: CanvasRenderingContext2D, uiCtx: CanvasRenderingContext2D): void {
-    if (
-      !this._images[this._weaponType] ||
-      !this.world.player ||
-      this.world.gameOver
-    ) {
+    const imageManager = ImageManager.getInstance();
+    const image = imageManager.getPlayerTexture(this._weaponType);
+    if (!image || !this.world.player || this.world.gameOver) {
       return;
     }
 
@@ -154,9 +131,9 @@ export class OtherPlayer extends ScreenObject implements IOtherPlayer {
         );
       }
 
-      if (!this.dead && this._images[this._weaponType]) {
+      if (!this.dead && image) {
         ctx.drawImage(
-          this._images[this._weaponType]!,
+          image,
           texturePoint.x,
           texturePoint.y,
           textureSize,

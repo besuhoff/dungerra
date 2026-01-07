@@ -4,10 +4,10 @@ import { IEnemy } from "../types/screen-objects/IEnemy";
 import { IWall } from "../types/screen-objects/IWall";
 import { IPoint } from "../types/geometry/IPoint";
 import { IWorld } from "../types/IWorld";
-import { loadImage } from "../utils/loadImage";
 import { Point2D } from "../utils/geometry/Point2D";
 import { AudioManager } from "../utils/AudioManager";
 import { Enemy as EnemyMessage, EnemyUpdate } from "../types/socketEvents";
+import { ImageManager } from "../utils/ImageManager";
 
 export class Enemy extends ScreenObject implements IEnemy {
   private _enemyTowerBg: HTMLImageElement | null = null;
@@ -41,19 +41,24 @@ export class Enemy extends ScreenObject implements IEnemy {
     this.dead = !enemyData.isAlive;
     this._type = enemyData.type as config.EnemyType;
 
+    const imageManager = ImageManager.getInstance();
     // Load enemy sprite
-    loadImage(config.ENEMY_TEXTURE_BY_TYPE[this._type]).then((img) => {
-      this._image = img;
-    });
+    imageManager
+      .loadImage(config.ENEMY_TEXTURE_BY_TYPE[this._type])
+      .then((img) => {
+        this._image = img;
+      });
 
-    loadImage(config.TEXTURES.ENEMY_TOWER_BACK).then((img) => {
+    imageManager.loadImage(config.TEXTURES.ENEMY_TOWER_BACK).then((img) => {
       this._enemyTowerBg = img;
     });
 
     // Load blood texture
-    loadImage(config.ENEMY_DEAD_TEXTURE_BY_TYPE[this._type]).then((img) => {
-      this.deadImage = img;
-    });
+    imageManager
+      .loadImage(config.ENEMY_DEAD_TEXTURE_BY_TYPE[this._type])
+      .then((img) => {
+        this.deadImage = img;
+      });
   }
 
   get rotation(): number {
