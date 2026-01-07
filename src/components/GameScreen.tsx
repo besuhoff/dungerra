@@ -1,10 +1,4 @@
-import React, {
-  useEffect,
-  useRef,
-  useState,
-  useCallback,
-  useMemo,
-} from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Game } from "../utils/Game";
 import { SessionManager } from "../api/SessionManager";
@@ -15,19 +9,26 @@ export const GameScreen: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
   const gameRef = useRef<Game | null>(null);
+  const gameCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const lightCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const uiCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const initializingRef = useRef(false);
   const [error, setError] = useState("");
 
   // Memoize manager instances to prevent re-creation on every render
   const sessionManager = useMemo(() => SessionManager.getInstance(), []);
-  const leaderboardManager = useMemo(
-    () => LeaderboardManager.getInstance(),
-    []
-  );
 
   useEffect(() => {
     if (!sessionId) {
       navigate("/sessions");
+      return;
+    }
+
+    if (
+      !gameCanvasRef.current ||
+      !lightCanvasRef.current ||
+      !uiCanvasRef.current
+    ) {
       return;
     }
 
@@ -43,7 +44,11 @@ export const GameScreen: React.FC = () => {
         const session = await sessionManager.joinSession(sessionId);
         document.title = `Dungerra - ${session.name}`;
 
-        const game = new Game();
+        const game = new Game(
+          gameCanvasRef.current!,
+          lightCanvasRef.current!,
+          uiCanvasRef.current!,
+        );
         gameRef.current = game;
         await game.start(session);
       } catch (err) {
@@ -82,19 +87,19 @@ export const GameScreen: React.FC = () => {
   return (
     <div id="gameScreen" className="screen">
       <canvas
-        id="gameCanvas"
+        ref={gameCanvasRef}
         className="gameCanvas"
         width={config.SCREEN_WIDTH}
         height={config.SCREEN_HEIGHT}
       ></canvas>
       <canvas
-        id="lightCanvas"
+        ref={lightCanvasRef}
         className="gameCanvas"
         width={config.SCREEN_WIDTH}
         height={config.SCREEN_HEIGHT}
       ></canvas>
       <canvas
-        id="uiCanvas"
+        ref={uiCanvasRef}
         className="gameCanvas"
         width={config.SCREEN_WIDTH}
         height={config.SCREEN_HEIGHT}

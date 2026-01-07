@@ -3,7 +3,6 @@ import * as config from "../config";
 import { IPlayer } from "../types/screen-objects/IPlayer";
 import { IPoint } from "../types/geometry/IPoint";
 import { IWorld } from "../types/IWorld";
-import { loadImage } from "../utils/loadImage";
 import { AudioManager } from "../utils/AudioManager";
 import {
   InventoryItem as InventoryItemMessage,
@@ -12,6 +11,7 @@ import {
 } from "../types/socketEvents";
 import { SessionPlayer } from "../types/session";
 import { Point2D } from "../utils/geometry/Point2D";
+import { ImageManager } from "../utils/ImageManager";
 
 export class Player extends ScreenObject implements IPlayer {
   private _nightVisionTimer: number = 0;
@@ -23,12 +23,6 @@ export class Player extends ScreenObject implements IPlayer {
   private _selectedGunType: config.WeaponType = "blaster";
   private _inventory: InventoryItemMessage[] = [];
 
-  private _images: Record<config.WeaponType, HTMLImageElement | null> = {
-    blaster: null,
-    shotgun: null,
-    railgun: null,
-    rocket_launcher: null,
-  };
   private _imageDead: HTMLImageElement | null = null;
   private _inventoryImage: HTMLImageElement | null = null;
   private _inventoryOpen: boolean = true;
@@ -114,27 +108,13 @@ export class Player extends ScreenObject implements IPlayer {
 
     this._rotation = rotation;
 
-    // Load player sprite
-    loadImage(config.PLAYER_TEXTURE_BY_WEAPON_TYPE.blaster).then((img) => {
-      this._images.blaster = img;
-    });
-    loadImage(config.PLAYER_TEXTURE_BY_WEAPON_TYPE.shotgun).then((img) => {
-      this._images.shotgun = img;
-    });
-    loadImage(config.PLAYER_TEXTURE_BY_WEAPON_TYPE.railgun).then((img) => {
-      this._images.railgun = img;
-    });
-    loadImage(config.PLAYER_TEXTURE_BY_WEAPON_TYPE.rocket_launcher).then(
-      (img) => {
-        this._images.rocket_launcher = img;
-      }
-    );
     // Load inventory texture
-    loadImage(config.TEXTURES.INVENTORY).then((img) => {
+    const imageManager = ImageManager.getInstance();
+    imageManager.loadImage(config.TEXTURES.INVENTORY).then((img) => {
       this._inventoryImage = img;
     });
 
-    loadImage(config.TEXTURES.BLOOD).then((img) => {
+    imageManager.loadImage(config.TEXTURES.BLOOD).then((img) => {
       this._imageDead = img;
     });
   }
@@ -184,7 +164,9 @@ export class Player extends ScreenObject implements IPlayer {
       return;
     }
 
-    if (!this._images[this._selectedGunType] || !this._imageDead) {
+    const imageManager = ImageManager.getInstance();
+    const imageAlive = imageManager.getPlayerTexture(this._selectedGunType);
+    if (!imageAlive || !this._imageDead) {
       return;
     }
 
@@ -201,16 +183,14 @@ export class Player extends ScreenObject implements IPlayer {
     ctx.translate(screenPoint.x, screenPoint.y);
 
     if (this._invulnerableTimer <= 0 || shouldBlink) {
-      const image = this.isAlive()
-        ? this._images[this._selectedGunType]!
-        : this._imageDead;
+      const image = this.isAlive() ? imageAlive : this._imageDead;
       const imageSize = this.isAlive()
         ? config.PLAYER_TEXTURE_SIZE
         : config.BLOOD_TEXTURE_SIZE;
       // Draw player sprite
       ctx.rotate((this._rotation * Math.PI) / 180);
       ctx.drawImage(
-        this.isAlive() ? this._images[this._selectedGunType]! : this._imageDead,
+        this.isAlive() ? image : this._imageDead,
         texturePoint.x,
         texturePoint.y,
         imageSize,
@@ -278,12 +258,13 @@ export class Player extends ScreenObject implements IPlayer {
       );
 
       if (this._inventory) {
+        const imageManager = ImageManager.getInstance();
         this._inventory.forEach((item) => {
           if (!item.quantity) {
             return;
           }
 
-          const itemTexture = this.world.getInventoryTexture(
+          const itemTexture = imageManager.getInventoryTexture(
             item.type as config.InventoryItemID
           );
 

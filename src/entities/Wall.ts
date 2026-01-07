@@ -3,7 +3,7 @@ import * as config from "../config";
 import { IWall } from "../types/screen-objects/IWall";
 import { IPoint } from "../types/geometry/IPoint";
 import { IWorld } from "../types/IWorld";
-import { loadImage } from "../utils/loadImage";
+import { ImageManager } from "../utils/ImageManager";
 
 export class Wall extends ScreenObject implements IWall {
   private image: HTMLImageElement | null = null;
@@ -17,8 +17,8 @@ export class Wall extends ScreenObject implements IWall {
     id?: string
   ) {
     super(point, width, height, id);
-
-    loadImage(config.TEXTURES.WALL).then((img) => {
+    const imageManager = ImageManager.getInstance();
+    imageManager.loadImage(config.TEXTURES.WALL).then((img) => {
       this.image = img;
     });
   }

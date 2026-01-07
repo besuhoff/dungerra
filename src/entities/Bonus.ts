@@ -2,10 +2,10 @@ import { IBonus } from "../types/screen-objects/IBonus";
 import { BonusType } from "../types/screen-objects/IBonus";
 import { IWorld } from "../types/IWorld";
 import { ScreenObject } from "./ScreenObject";
-import { loadImage } from "../utils/loadImage";
 import * as config from "../config";
-import { InventoryItem, Bonus as BonusMessage } from "../types/socketEvents";
+import { Bonus as BonusMessage } from "../types/socketEvents";
 import { Point2D } from "../utils/geometry/Point2D";
+import { ImageManager } from "../utils/ImageManager";
 
 export class Bonus extends ScreenObject implements IBonus {
   private _type: BonusType;
@@ -46,7 +46,8 @@ export class Bonus extends ScreenObject implements IBonus {
     this._type = data.type as BonusType;
     this._belongsToPlayer = data.droppedBy === world.player?.id;
 
-    loadImage(texturePath).then((img) => {
+    const imageManager = ImageManager.getInstance();
+    imageManager.loadImage(texturePath).then((img) => {
       this.image = img;
     });
   }
