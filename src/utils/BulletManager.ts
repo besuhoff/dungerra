@@ -56,7 +56,7 @@ export class BulletManager implements IBulletManager {
     if (!bullet.active) {
       const lifetime =
         config.BULLET_AFTERLIFE_MS_BY_WEAPON_TYPE[bullet.weaponType];
-      const millisecondsPassed = Date.now() - bullet.deletedAt;
+      const millisecondsPassed = Math.max(0, Date.now() - bullet.deletedAt);
       if (millisecondsPassed >= lifetime) {
         this._bullets.delete(bullet.id);
         return;
@@ -66,7 +66,7 @@ export class BulletManager implements IBulletManager {
         if (!this._bulletsRemovedSoundCache.has(cacheKey)) {
           AudioManager.getInstance().playSound(config.SOUNDS.ROCKET_BLAST, {
             volume,
-            offset: Date.now() - bullet.deletedAt,
+            offset: millisecondsPassed,
           });
           this._bulletsRemovedSoundCache.add(cacheKey);
         }
@@ -90,7 +90,7 @@ export class BulletManager implements IBulletManager {
       if (!bullet.active) {
         const lifetime =
           config.BULLET_AFTERLIFE_MS_BY_WEAPON_TYPE[bullet.weaponType];
-        const millisecondsPassed = Date.now() - bullet.deletedAt;
+        const millisecondsPassed = Math.max(0, Date.now() - bullet.deletedAt);
         if (millisecondsPassed >= lifetime) {
           this._bullets.delete(bullet.id);
           this._bulletsSoundCache.delete(bullet.id);
