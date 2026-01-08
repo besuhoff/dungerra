@@ -1,8 +1,14 @@
-import React, { useEffect, useRef, useState, useMemo } from "react";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  useMemo,
+  useCallback,
+} from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Game } from "../utils/Game";
 import { SessionManager } from "../api/SessionManager";
-import { LeaderboardManager } from "../api/LeaderboardManager";
+import { AudioManager } from "../utils/AudioManager";
 import * as config from "../config";
 
 export const GameScreen: React.FC = () => {
@@ -14,9 +20,21 @@ export const GameScreen: React.FC = () => {
   const uiCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const initializingRef = useRef(false);
   const [error, setError] = useState("");
+  const volumeRef = useRef<HTMLInputElement | null>(null);
 
   // Memoize manager instances to prevent re-creation on every render
   const sessionManager = useMemo(() => SessionManager.getInstance(), []);
+  const audioManager = useMemo(() => AudioManager.getInstance(), []);
+
+  const handleVolumeChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newVolume = parseFloat(e.target.value);
+      audioManager.setMasterVolume(newVolume);
+      // Update CSS variable for visual fill
+      e.target.style.setProperty("--slider-value", `${newVolume * 100}%`);
+    },
+    [audioManager]
+  );
 
   useEffect(() => {
     if (!sessionId) {
@@ -47,12 +65,11 @@ export const GameScreen: React.FC = () => {
         const game = new Game(
           gameCanvasRef.current!,
           lightCanvasRef.current!,
-          uiCanvasRef.current!,
+          uiCanvasRef.current!
         );
         gameRef.current = game;
         await game.start(session);
       } catch (err) {
-        console.error("Failed to join session:", err);
         setError("Failed to join session. Redirecting...");
         setTimeout(() => navigate("/sessions"), 2000);
       } finally {
@@ -70,11 +87,12 @@ export const GameScreen: React.FC = () => {
         });
         gameRef.current.stop();
         gameRef.current = null;
+        initializingRef.current = false;
       }
-      initializingRef.current = false;
+
       document.title = "Dungerra";
     };
-  }, [sessionId, navigate, sessionManager]);
+  }, [sessionId, navigate]);
 
   if (error) {
     return (
@@ -104,6 +122,27 @@ export const GameScreen: React.FC = () => {
         width={config.SCREEN_WIDTH}
         height={config.SCREEN_HEIGHT}
       ></canvas>
+      <div className="volume-control">
+        <label htmlFor="volume-slider" className="volume-label">
+          🔊
+        </label>
+        <input
+          ref={volumeRef}
+          id="volume-slider"
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          defaultValue={audioManager.getMasterVolume()}
+          onChange={handleVolumeChange}
+          className="volume-slider"
+          style={
+            {
+              "--slider-value": `${audioManager.getMasterVolume() * 100}%`,
+            } as React.CSSProperties
+          }
+        />
+      </div>
     </div>
   );
 };

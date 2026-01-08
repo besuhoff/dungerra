@@ -11,11 +11,19 @@ export class AudioManager {
   private soundBuffers: Map<string, AudioBuffer>;
   private loadingPromises: Map<string, Promise<void>>;
   private activeSources: Map<string, Set<AudioBufferSourceNode>> = new Map();
+  private masterGainNode: GainNode;
+  private masterVolume: number;
 
   private constructor() {
     this.audioContext = new AudioContext();
     this.soundBuffers = new Map();
     this.loadingPromises = new Map();
+    this.masterVolume = localStorage.getItem("masterVolume")
+      ? parseFloat(localStorage.getItem("masterVolume")!)
+      : 1;
+    this.masterGainNode = this.audioContext.createGain();
+    this.masterGainNode.gain.value = this.masterVolume;
+    this.masterGainNode.connect(this.audioContext.destination);
   }
 
   static getInstance(): AudioManager {
@@ -59,7 +67,7 @@ export class AudioManager {
     gainNode.gain.value = options?.volume ?? 1;
 
     source.connect(gainNode);
-    gainNode.connect(this.audioContext.destination);
+    gainNode.connect(this.masterGainNode);
 
     // Track active source
     if (!this.activeSources.has(soundPath)) {
@@ -104,5 +112,15 @@ export class AudioManager {
       });
       sources.clear();
     });
+  }
+
+  setMasterVolume(volume: number): void {
+    this.masterVolume = Math.max(0, Math.min(1, volume));
+    this.masterGainNode.gain.value = this.masterVolume;
+    localStorage.setItem("masterVolume", this.masterVolume.toString());
+  }
+
+  getMasterVolume(): number {
+    return this.masterVolume;
   }
 }
